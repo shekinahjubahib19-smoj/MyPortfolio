@@ -120,7 +120,7 @@ h1, h2, h3, h4 {
   background: linear-gradient(to bottom, #2B59C3, #673AB7, #A336F1);
   z-index: -1;
   pointer-events: none;
-  transition: all 1s;
+  transition: all .5s;
 }
 
 .btn:hover::before {
@@ -142,7 +142,7 @@ h1, h2, h3, h4 {
   width: 150%; /* Wider expansion for a "burst" feel */
   left: -25%;
   opacity: 0.4;
-  transition: width 0.3s ease-out;
+  transition: width 0.5s ease-out;
 }
 
 /* Keyboard focus: Modern "Halo" effect */
@@ -151,7 +151,7 @@ h1, h2, h3, h4 {
   outline: 3px solid rgba(59, 130, 246, 0.5); 
   outline-offset: 4px;
   /* Keep it steady when focused */
-  transform: scale(1.02);
+  transform: scale(.98);
 }
 
 /* Responsive sizes */
