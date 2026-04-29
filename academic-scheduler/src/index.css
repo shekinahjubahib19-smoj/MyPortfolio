@@ -3,6 +3,11 @@
 @tailwind utilities;
 
 /* 1. Global Reset */
+html, body, #root {
+  height: 100%;
+  overflow: hidden;
+}
+
 body {
   margin: 0;
   background-color: #0f172a; /* Your new dark theme color */
@@ -93,6 +98,7 @@ h1, h2, h3, h4 {
   background-origin: padding-box, border-box;
   background-clip: padding-box, border-box;
   z-index: 0; /* ensure stacking context; pseudo-element will sit behind with -1 */
+  border-radius: 1rem;
 }
 
 .btn:hover {
@@ -121,8 +127,35 @@ h1, h2, h3, h4 {
   width: 160%;
 }
 
+/* Click / active effect: The "Tactile Press" */
+.btn:active {
+  /* Subtle downward movement + slight shrink makes it feel "pressed" */
+  transform: translateY(2px) scale(0.96);
+  /* Reduce shadow to simulate the button getting closer to the surface */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2);
+  /* Slightly darken to show interaction */
+  filter: brightness(0.9);
+}
+
+/* The Shine/Glow expand on click */
+.btn:active::before {
+  width: 150%; /* Wider expansion for a "burst" feel */
+  left: -25%;
+  opacity: 0.4;
+  transition: width 0.3s ease-out;
+}
+
+/* Keyboard focus: Modern "Halo" effect */
+.btn:focus-visible {
+  /* Change the color to match your Blue/Purple theme */
+  outline: 3px solid rgba(59, 130, 246, 0.5); 
+  outline-offset: 4px;
+  /* Keep it steady when focused */
+  transform: scale(1.02);
+}
+
 /* Responsive sizes */
 @media (min-width: 768px) {
-  .hero-title { font-size: 4rem; /* text-6xl */ }
+  .hero-title { font-size: 6rem; /* text-6xl */ }
   .hero-subtitle { font-size: 1.5rem; /* text-2xl */ }
 }

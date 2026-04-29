@@ -1,0 +1,173 @@
+/* Landing page specific styles: split layout with hidden login pane */
+
+.landing-root {
+display: flex;
+ align-items: center;
+ justify-content: center;
+ height: 100vh;
+ width: 100%;
+ padding: 0;
+ overflow: hidden;
+ box-sizing: border-box;
+}
+
+
+.landing-bg-layer {
+ pointer-events: none;
+}
+
+.landing-split {
+ width: 100%;
+ display: grid; /* keep display stable to avoid double-layout during transitions */
+ grid-template-columns: 1fr 0fr; /* collapsed login column by default */
+ align-items: center;
+ justify-content: center;
+ justify-items: center; /* center grid cells by default so hero sits in middle */
+ gap: 0rem;
+ box-sizing: border-box;
+ height: 100%;
+ padding: clamp(0.75rem, 1.5vw, 1.25rem);
+ max-width: 1200px; /* keep the split centered inside viewport */
+ margin: 0 auto;
+  /* grid-template-columns no longer transitions to avoid double-move; */
+  transition: none;
+  will-change: transform;
+}
+
+.landing-split--active {
+ grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+ align-items: center;
+ justify-content: start;
+ /* keep justify-items centered so the hero cell stays centered; use transform for movement */
+ margin-left: 0;
+ margin-right: 0;
+ column-gap: 0rem;
+ height: 100%;
+}
+
+/* When split is active make sure each column's content is centered and fills its cell */
+.landing-split--active .landing-hero-pane {
+width: 100%;
+ padding: 0 0rem;
+ box-sizing: border-box;
+ display: flex;
+ align-items: center;
+ justify-content: center; /* align hero content to the left */
+ transform: translate3d(-40px,0,0); /* stronger left shift for a clear swipe */
+}
+
+/* The login container handles fading so all inner content leaves together */
+.landing-login-pane .login-root {
+ /* keep inner content fully opaque; container fades it */
+ opacity: 1;
+ transition: none;
+ will-change: auto;
+}
+
+/* when hero needs to animate back after login exits, play reverse on hero-pane */
+.landing-split--hero-leaving .landing-hero-pane {
+ /* move hero back to original position smoothly */
+ transform: translate3d(0,0,0);
+}
+
+/* Ensure login has entrance animation when becoming visible */
+.landing-split--active .landing-login-pane.is-visible .login-root {
+ /* fade login card in */
+ opacity: 1;
+}
+
+.landing-hero-pane {
+ padding: 1.5%;
+ width: 90%;
+ max-width: none;
+ box-sizing: border-box;
+ max-width: 720px;
+ justify-self: center; /* ensure hero column is centered in its grid cell */
+ transform: translate3d(0,0,0);
+ /* use a smooth non-overshooting easing for a clean swipe-back; include opacity */
+ transition: transform 480ms cubic-bezier(.2,0,.2,1), opacity 320ms ease;
+ will-change: transform, opacity;
+
+}
+
+/* Ensure hero inner content is centered by default */
+.landing-hero-pane .hero-inner {
+ margin: 0;
+ text-align: center;
+}
+
+.landing-split--active .landing-login-pane {
+ display: flex;
+ align-items: center;
+ justify-content: center; /* position login card centered in its column */
+ padding: 0;
+}
+
+
+
+/* Reduce hero footprint to avoid scrollbars */
+.landing-hero-pane .hero-section {
+ min-height: auto;
+ padding-top: 2rem;
+ padding-bottom: 2rem;
+}
+
+.landing-hero-pane .hero-title {
+ font-size: clamp(2rem, 2.6vw, 2.3rem);
+ line-height: 1.05;
+}
+
+.landing-hero-pane .hero-subtitle {
+ font-size: 1rem;
+ max-width: 36rem;
+}
+
+.landing-login-pane {
+ padding: 0;
+ width: 100%;
+ max-width:360px;
+ display: none; /* hidden by default */
+ box-sizing: border-box;
+ opacity: 0;
+ visibility: hidden;
+ pointer-events: none;
+ transition: opacity 420ms ease, visibility 0s linear 420ms;
+}
+
+.landing-login-pane.is-visible {
+ display: flex; /* shown when .is-visible is present */
+ justify-content: center; /* center login card horizontally in column */
+ align-items: center; /* center vertically */
+ padding-right: 0;
+ opacity: 1;
+ visibility: visible;
+ pointer-events: auto;
+ transition-delay: 0s, 0s;
+}
+
+/* Keep the pane present while the split is leaving so the opacity
+  transition can run cleanly instead of snapping to display:none. */
+.landing-split--leaving .landing-login-pane {
+ display: flex;
+ opacity: 0;
+ visibility: hidden;
+ pointer-events: none;
+ transition: opacity 420ms ease;
+}
+
+/* Keep hero content squeezed to the left when split is active */
+.landing-split--active .hero-section {
+ justify-content: center;
+ min-height: auto;
+}
+
+.landing-split--active .hero-inner {
+ text-align: center;
+}
+
+@media (max-width: 1024px) {
+ .landing-split--active { grid-template-columns: 1fr; }
+ .landing-login-pane { max-width: 350px; }
+ .landing-hero-pane .hero-title { font-size: 2rem; }
+ .landing-hero-pane .hero-subtitle { font-size: 0.95rem; }
+}

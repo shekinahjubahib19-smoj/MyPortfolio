@@ -1,15 +1,14 @@
 .navbar-root {
+  position: absolute;
+  top: 1rem; /* equivalent to Tailwind top-4 */
+  left: 1rem; /* equivalent to Tailwind left-4 */
+  z-index: 50; /* equivalent to Tailwind z-50 */
   display: flex;
   align-items: center;
   gap: 0.5rem;
 }
 
 .navbar-logo-container {
-  position: fixed;
-  top: 1rem; /* equivalent to Tailwind top-4 */
-  left: 1rem; /* equivalent to Tailwind left-4 */
-  z-index: 50; /* equivalent to Tailwind z-50 */
-
   display: flex;
   align-items: center;
   gap: 0rem;

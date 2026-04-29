@@ -1,32 +1,35 @@
-import React, { useState } from 'react';
+import React from 'react';
 import bgImage from '../assets/img/bg-3d.jpg'; 
 import Navbar from '../components/navbar';
 import Hero from '../sections/hero';
+import Login from '../sections/login';
+import '../assets/css/landing.css';
+import { useLandingState } from '../assets/js/landing';
 
 
 const LandingPage = () => {
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
-  const handleMouseMove = (e) => {
-    const { clientX, clientY } = e;
-    const moveX = (clientX / window.innerWidth - 0.5) * 25;
-    const moveY = (clientY / window.innerHeight - 0.5) * 25;
-    setMousePos({ x: moveX, y: moveY });
-  };
+  const {
+    mousePos,
+    showLogin,
+    isLeaving,
+    isHeroLeaving,
+    setShowLogin,
+    handleMouseMove,
+    handleClose,
+  } = useLandingState();
 
   return (
     <div 
       onMouseMove={handleMouseMove}
-      className="relative min-h-screen w-full flex items-center justify-center p-4 overflow-hidden bg-black"
+      className="landing-root relative min-h-screen w-full overflow-hidden bg-black"
     >
        {/* Navbar */}
       <Navbar />
-      {/* Hero content */}
-      <Hero />
+
 
       {/* 1. 3D IMAGE LAYER: Moving Background */}
       <div 
-        className="absolute inset-0 z-0 transition-transform duration-700 ease-out"
+        className="landing-bg-layer absolute inset-0 z-0 transition-transform duration-700 ease-out"
         style={{ 
           transform: `translate(${mousePos.x}px, ${mousePos.y}px) scale(1.1)` 
         }}
@@ -48,6 +51,16 @@ const LandingPage = () => {
         className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-screen transition-transform duration-1000"
         style={{ transform: `translate(${mousePos.x * 1.2}px, ${mousePos.y * 1.2}px)` }}
       />
+
+      {/* Main split area */}
+      <div className={`landing-split ${showLogin || isLeaving ? 'landing-split--active' : ''} ${isLeaving ? 'landing-split--leaving' : ''} ${isHeroLeaving ? 'landing-split--hero-leaving' : ''}`}>
+        <div className="landing-hero-pane">
+          <Hero onLogin={() => setShowLogin(true)} />
+        </div>
+        <div className={`landing-login-pane ${showLogin ? 'is-visible' : ''}`}>
+          <Login onBack={handleClose} />
+        </div>
+      </div>
 
     </div>
   );

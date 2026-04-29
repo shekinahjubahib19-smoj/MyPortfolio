@@ -1,16 +1,19 @@
 /** 
 security: Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
-cd landing-page-1 
+
 ..\node-v24.15.0-win-x64\npm.cmd install **/
 /**Run daily: ..\node-v24.15.0-win-x64\npm.cmd run dev 
 
+..\node-v24.15.0-win-x64\npm.cmd install @tailwindcss/postcss postcss
+
 short cut:
 
-$env:Path += ";C:\xampp\htdocs\Portfolio\node-v24.15.0-win-x64"
+1. cd academic-scheduler
 
-Now, for the rest of that session, you can just type:npm.cmd run dev
+2. $env:Path += ";C:\xampp\htdocs\Portfolio\node-v24.15.0-win-x64"
 
-..\node-v24.15.0-win-x64\npm.cmd install @tailwindcss/postcss postcss
+3. npm.cmd run dev
+
 **/
 
 import React from 'react';
