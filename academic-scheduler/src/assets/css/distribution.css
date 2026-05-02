@@ -1,0 +1,9 @@
+.dist-root { padding:1.25rem; color: rgba(255,255,255,0.95); }
+.dist-header h1 { margin:0; font-size:1.25rem; }
+.dist-sub { margin:0.25rem 0 1rem 0; color: rgba(255,255,255,0.7); }
+.dist-grid { display:grid; grid-template-columns: repeat(3, 1fr); gap:0.75rem; }
+.dist-card { background: rgba(255,255,255,0.03); padding:0.75rem; border-radius:0.5rem; }
+.dist-id { font-weight:700; }
+.dist-desc { color: rgba(255,255,255,0.75); margin-top:0.35rem; }
+
+@media (max-width:900px){ .dist-grid{ grid-template-columns:1fr; } }

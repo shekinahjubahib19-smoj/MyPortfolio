@@ -147,3 +147,17 @@
   .landing-hero-pane { padding: 1rem; }
   .landing-hero-pane .hero-title { font-size: 1.5rem; }
 }
+
+/* App layout when user is logged in: content sits to the right of the fixed sidebar */
+.app-root {
+  margin-left: 220px; /* matches .sidebar-root width */
+  width: calc(100% - 220px);
+  min-height: 100vh;
+  background: transparent; /* don't cover the whole page with a bg */
+  padding: 1.25rem; /* page padding inside the content area */
+  box-sizing: border-box;
+}
+
+@media (max-width: 900px) {
+  .app-root { margin-left: 0; width: 100%; padding: 1rem; }
+}

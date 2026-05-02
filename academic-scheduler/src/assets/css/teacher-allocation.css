@@ -1,0 +1,7 @@
+.ta-root { padding: 1.25rem; color: rgba(255,255,255,0.95); }
+.ta-header h1 { margin: 0; font-size: 1.25rem; }
+.ta-sub { margin: 0.25rem 0 1rem 0; color: rgba(255,255,255,0.7); }
+.ta-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
+.ta-item { display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding:0.6rem; border-radius:0.5rem; }
+.ta-name { font-weight:600; }
+.ta-load { color: rgba(255,255,255,0.75); }

@@ -1,0 +1,90 @@
+/* Styles extracted from Login component (Tailwind -> plain CSS)
+   Keeps the visual intent while centralizing styles in a CSS file.
+*/
+
+.login-root {
+  width: 100%;
+  max-width: 340px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(6px);
+  border-radius: 1rem;
+  padding-left: 1;
+  margin: 0 auto;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  max-height: calc(100vh - 3.5rem); /* prevent overflowing viewport */
+  box-sizing: border-box;
+}
+
+@keyframes fadeInZoom {
+  from { opacity: 0; transform: translateY(6px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.login-header { text-align: center; margin-bottom: .5rem; }
+.login-title { font-size: 1.9rem; font-weight: 800; color: #fff; margin-bottom: 0.5rem; letter-spacing: -0.01em; }
+.login-subtitle { color: #94a3b8; font-size: 0.875rem; }
+
+.login-form { display: flex; flex-direction: column; gap: 0.75rem; flex: 1 1 auto; min-height: 0; margin-left: 1rem; margin-right: 1rem }
+
+.login-field-label { display: block; font-size: 0.625rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.12em; margin-left: 0.25rem; }
+
+.login-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 1rem;
+  padding: 0.7rem 0.9rem;
+  color: #ffffff;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  backdrop-filter: blur(6px);
+  box-sizing: border-box;
+}
+.login-input::placeholder { color: #94a3b8; }
+.login-input:focus { outline: none; box-shadow: 0 0 0 8px rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.5); }
+
+.login-forgot { font-size: 10px; color: #60a5fa; }
+.login-forgot:hover { text-decoration: underline; }
+
+.login-submit { width: 100%; margin-left: 0; background-color: #2563eb; color: #fff; font-weight: 700; border-radius: 1rem; margin-top: 0.5rem; box-shadow: 0 8px 24px rgba(37,99,235,0.12); }
+
+.login-back {
+  display: block;
+  margin: 0.75rem auto 1rem;
+  background: transparent;
+  border: none;
+  padding: 0;
+  color: #94a3b8; /* slate-300 */
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-align: center;
+  cursor: pointer;
+  transition: color 0.12s ease;
+}
+/* Ensure inner elements can shrink so the card never overflows */
+.login-root, .login-root * { max-width: 100%; }
+
+@media (max-height: 720px) {
+  .login-root { padding: 0.5rem; max-height: calc(100vh - 2rem); }
+  .login-title { font-size: 1.5rem; }
+  .login-subtitle { font-size: 0.78rem; }
+  .login-input { padding: 0.6rem 0.75rem; }
+  .login-submit { padding: 0.6rem 0.8rem; }
+}
+.login-back:hover { color: #de69d2; /* slate-300 */ }
+
+/* Only animate the login card when the overlay becomes visible. This
+   prevents the entry animation from forcing per-child delays when hiding. */
+.landing-login-pane.is-visible .login-root {
+  animation: fadeInZoom 260ms ease both;
+}
+
+/* When the overlay is leaving, ensure the card's children fade together
+   by resetting any animations and letting the overlay's opacity transition
+   control the visual hide. */
+.landing-split--leaving .landing-login-pane .login-root,
+.landing-split--leaving .landing-login-pane .login-root * {
+  animation: none !important;
+}

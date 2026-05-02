@@ -1,0 +1,135 @@
+.navbar-root {
+  /* navbar participates in flow inside .navbar-container */
+  --navbar-height: 64px;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--navbar-height);
+  z-index: 60;
+  width: 100%;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* inner wrapper that centers and constrains navbar content */
+.nav-inner {
+  max-width: 1200px;
+  margin: 0 auto;
+  height: var(--navbar-height);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0 1rem;
+  box-sizing: border-box;
+}
+
+.logo-container {
+  display: flex;
+  align-items: center;
+  gap: 0rem;
+  padding-top: 1rem;
+  padding-left: 1rem;
+}
+
+.navbar-logo {
+  height: 3.5rem; /* equivalent to Tailwind h-10 */
+  width: auto;
+  object-fit: contain;
+  opacity: 1 !important;
+  mix-blend-mode: normal !important;
+}
+
+.navbar-text {
+  margin-left: -3rem;
+  font-size: 1.5rem; /* text-2xl */
+  font-weight: 900; /* font-black */
+  letter-spacing: -0.025em; /* tighter tracking */
+  color: #ffffff;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+/* Right-aligned pages container (links, user, logout) */
+.navbar-pages {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  color: #ffffff;
+  border-top: none;
+  border-bottom: none;
+  padding: 0 1rem; /* horizontal padding only; vertical alignment via .nav-inner */
+  box-sizing: border-box;
+  pointer-events: auto;
+  background: transparent;
+  position: relative; /* needed for pseudo-elements */
+}
+
+.navbar-pages a,
+.navbar-pages span,
+.navbar-pages button {
+  color: #ffffff;
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  padding: 0;
+  font: inherit;
+}
+
+.navbar-logout {
+  cursor: pointer;
+}
+
+/* Fading edges for top/bottom border lines */
+.navbar-pages::before,
+.navbar-pages::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  height: 1px;
+  pointer-events: none;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,1) 12%, rgba(255,255,255,1) 88%, rgba(255,255,255,0));
+}
+.navbar-pages::before { top: 0; }
+.navbar-pages::after { bottom: 0; }
+
+/* Menu container (hidden by default) */
+.menu-container {
+  display: none;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  padding-right: 1rem;
+  margin-top: -2.5rem;
+}
+.menu-container.is-visible {
+  display: flex;
+}
+
+.menu-links {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.menu-link {
+  color: rgba(255,255,255,0.88);
+  text-decoration: none;
+  padding: 0.4rem 0.75rem;
+  border-radius: 6px;
+  transition: background-color 160ms ease, color 160ms ease, transform 120ms ease;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+.menu-link:hover,
+.menu-link:focus {
+  background: rgba(255,255,255,0.06);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.menu-link + .menu-link {
+  margin-left: 0.25rem;
+}
