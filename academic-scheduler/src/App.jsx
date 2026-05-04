@@ -112,17 +112,17 @@ function AppInner() {
       </div>
 
       <div 
-        className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[140px] mix-blend-screen transition-transform duration-1000"
+        className="absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[140px] mix-blend-screen transition-transform duration-1000 z-0"
         style={{ transform: `translate(${mousePos.x * -1.5}px, ${mousePos.y * -1.5}px)` }}
       />
       <div 
-        className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-screen transition-transform duration-1000"
+        className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-screen transition-transform duration-1000 z-0"
         style={{ transform: `translate(${mousePos.x * 1.2}px, ${mousePos.y * 1.2}px)` }}
       />
 
       {/* If logged in show Dashboard, otherwise show landing split */}
       {user ? (
-        <div className="app-root relative z-10">
+        <div className="app-root relative z-20">
           {(() => {
             switch (route) {
               case 'users':

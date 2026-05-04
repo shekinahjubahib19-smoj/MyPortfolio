@@ -1,25 +1,15 @@
 /* User Management (bento layout) */
-.user-management-root {
-  padding: 3.5rem 2rem 4rem 2rem;
-  box-sizing: border-box;
-  color: #fff;
-}
-
-.um-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.5rem;
-}
-.um-header h1 { font-size: 1.25rem; margin: 0; font-weight: 800; }
+.um-root { padding:1.25rem; color: rgba(255,255,255,0.95); }
+.um-header h1 { margin:0; font-size:1.25rem; }
+/* .sa-header styles are specific to student assignments and should not be modified here. */
+.um-sub { margin:1rem 0 1rem 0; color: rgba(255,255,255,0.7); }
 .um-controls { display:flex; gap:0.75rem; align-items:center; }
 .um-search {
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.06);
   color: #e6eef8;
   padding: 0.5rem 0.75rem;
-  border-radius: 0.6rem;
+  margin-bottom: 0.5rem;
 }
 .um-add { padding: 0.5rem 0.8rem; border-radius:0.6rem; }
 
@@ -57,3 +47,51 @@
   .bento-grid { grid-template-columns: 1fr; }
   .user-management-root { padding: 1.25rem; }
 }
+
+/* Utilities used by the page markup */
+.um-sub { margin: 0.25rem 0 1rem 0; color: rgba(255,255,255,0.7); }
+.um-list { display: flex; flex-direction: column; gap: 0.6rem; }
+
+/* Remove default margins for small utility paragraphs inside the list (e.g. "Users count") */
+.um-list p { margin: 0; }
+
+/* Keep table header visible while tbody scrolls */
+.um-table {
+  width: 100%;
+  table-layout: fixed; /* ensure predictable equal column widths */
+}
+
+.um-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: linear-gradient(#2B59C3, #673AB7, #A336F1);
+  text-align: left;
+}
+
+.um-table th,
+.um-table td {
+  width: 50%;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Hover effect for tbody rows: subtle blur + lift */
+.um-table tbody tr {
+  transition: background-color 140ms ease;
+  position: relative; /* ensure ::before is positioned to the row */
+  transform: translateZ(0); /* create a new stacking context for predictable z-index ordering */
+}
+
+/* Instead of blurring text, add a blurred translucent background layer behind each row's cells */
+.um-table tbody { isolation: isolate; }
+.um-table tbody tr { position: relative; }
+.um-table tbody td { position: relative; z-index: 2; }
+
+/* Root wrapper used by the page component */
+.um-root { padding: 1.25rem; box-sizing: border-box; }
+
+/* Bring the list a bit closer to the header subtitle */
+.um-list { margin-top: 0rem; }
