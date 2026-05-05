@@ -13,7 +13,7 @@ const Login = ({ onBack }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    await submitLogin({ email, password, login, onBack, setError, setLoading });
+    await submitLogin({ email: email.trim(), password: password.trim(), login, onBack, setError, setLoading });
   };
 
   return (
@@ -25,12 +25,12 @@ const Login = ({ onBack }) => {
 
       <form className="login-form" onSubmit={handleSubmit}>
         <div>
-          <label className="login-field-label">Email</label>
+          <label className="login-field-label">Username or Email</label>
           <input
-            type="email"
+            type="text"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
-            placeholder="name@esl-company.com"
+            placeholder="username or name@company.com"
             className="login-input"
             required
           />

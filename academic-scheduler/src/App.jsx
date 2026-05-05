@@ -14,6 +14,8 @@ short cut:
 
 3. npm.cmd run dev
 
+4. change pass_hash: php -r "echo password_hash('admin123', PASSWORD_DEFAULT
+
 **/
 
 import React from 'react';
@@ -30,6 +32,7 @@ import TeacherAllocation from './pages/teacher-allocation';
 import StudentAssignments from './pages/student-assignments';
 import Distribution from './pages/distribution';
 import RoomMgmt from './pages/room-mgmt';
+import SubjectList from './pages/subject-list';
 import './assets/css/landing.css';
 import { useLandingState } from './assets/js/landing';
 
@@ -137,6 +140,8 @@ function AppInner() {
                 return <Distribution />;
               case 'room-mgmt':
                 return <RoomMgmt />;
+              case 'subjects':
+                return <SubjectList />;
               case 'dashboard':
               case '':
               default:

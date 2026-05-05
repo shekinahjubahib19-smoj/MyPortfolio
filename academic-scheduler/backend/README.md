@@ -1,43 +1,24 @@
-# Academic Scheduler — Backend (minimal)
+# Academic Scheduler — Backend (PHP)
 
-This folder contains a minimal Node.js + Express backend using Prisma (MySQL) to demonstrate authentication.
+This folder contains the small PHP backend used by the Academic Scheduler frontend.
 
-Setup (local development)
+Structure (grouped by role)
 
-1. Start a MySQL server (Docker example):
+- `config/` - configuration files and `.env` loader
+- `controllers/` - HTTP controllers (auth, profile, etc.)
+- `models/` - database models (User.php)
+- `api/` - public API endpoints (register_user.php, list_users.php)
+- `logs/` - runtime logs (error.log)
+- root files: `db.php`, `init_db.php`, and small dev helpers
 
-```bash
-docker run --name mysql-local -e MYSQL_ROOT_PASSWORD=secret -e MYSQL_DATABASE=devdb -p 3306:3306 -d mysql:8
-```
+Quick start
 
-2. Copy the example env and edit values:
-
-```bash
-cp .env.example .env
-# set DATABASE_URL and JWT_SECRET
-```
-
-3. Install dependencies and generate Prisma client:
-
-```bash
-cd backend
-npm install
-npx prisma generate
-# create migration and dev db
-npx prisma migrate dev --name init
-```
-
-4. Start the server:
-
-```bash
-npm run dev
-```
-
-API endpoints
-- POST `/api/auth/login` { email, password } -> sets httpOnly cookie `sid` and returns role
-- POST `/api/auth/logout` -> clears cookie
-- GET `/api/auth/me` -> returns logged-in user info (id,email,role)
-- GET `/api/users` -> admin-only list of users
+1. Copy `.env.example` to `.env` and fill DB credentials.
+2. Ensure PHP and MySQL (or XAMPP) are running.
+3. Visit `backend/init_db.php` once to create the database/tables.
 
 Notes
-- This is a minimal scaffold for local development. For production use, ensure `JWT_SECRET` is strong, enable HTTPS, set `secure: true` on cookies, and use a managed DB.
+
+- Keep `.env` out of version control.
+- Remove dev helpers (`set_password.php`) after use.
+

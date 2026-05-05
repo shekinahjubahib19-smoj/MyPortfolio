@@ -20,7 +20,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 ob_start();
 
 try {
-    include __DIR__ . '/../db.php';
+    include __DIR__ . '/../config/db.php';
+    require_once __DIR__ . '/../models/User.php';
 
     $raw = file_get_contents("php://input");
     $data = json_decode($raw);

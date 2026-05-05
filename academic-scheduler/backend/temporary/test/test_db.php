@@ -6,7 +6,7 @@ ini_set('log_errors', 1);
 
 try {
     // Load env and attempt connection via existing db.php
-    include __DIR__ . '/db.php';
+    include __DIR__ . '/../../db.php';
 
     $info = [
         'ok' => true,

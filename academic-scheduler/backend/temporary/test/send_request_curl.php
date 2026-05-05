@@ -1,7 +1,7 @@
 <?php
 // Use cURL extension to POST the payload and print response
 $payload = file_get_contents(__DIR__ . '/test_payload.json');
-$ch = curl_init('http://localhost/Portfolio/academic-scheduler/backend/register_user.php');
+$ch = curl_init('http://localhost/Portfolio/academic-scheduler/backend/api/register_user.php');
 curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, true);
 curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);

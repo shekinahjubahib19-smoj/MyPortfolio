@@ -5,7 +5,7 @@ ini_set('display_errors', '1');
 header('Content-Type: application/json');
 
 try {
-    include __DIR__ . '/db.php';
+    include __DIR__ . '/../../db.php';
     $info = [
         'connected' => true,
         'host' => $_ENV['DB_HOST'] ?? null,
@@ -17,7 +17,6 @@ try {
     echo json_encode($info);
 } catch (Throwable $e) {
     $env = $_ENV;
-    // hide password in output unless explicitly set for debugging
     if (isset($env['DB_PASS'])) $env['DB_PASS'] = '***';
     echo json_encode([
         'connected' => false,

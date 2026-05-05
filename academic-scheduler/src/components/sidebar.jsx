@@ -60,6 +60,17 @@ const Sidebar = () => {
           Teacher Allocation
         </a>
 
+        <a href="#/subjects" className={`sidebar-link ${isActive('subjects') ? 'is-active' : ''}`}>
+          <span className="sidebar-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2L2 7l10 5 10-5-10-5z" />
+              <path d="M2 17l10 5 10-5" />
+              <path d="M2 12l10 5 10-5" />
+            </svg>
+          </span>
+          Subjects
+        </a>
+
         <a href="#/student-assignments" className={`sidebar-link ${isActive('student-assignments') ? 'is-active' : ''}`}>
           <span className="sidebar-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">

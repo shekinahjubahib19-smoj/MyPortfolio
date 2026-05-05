@@ -1,6 +1,6 @@
 /* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { mockLogin } from '../assets/js/login.js';
+// switched to backend authentication
 
 const AuthContext = createContext(null);
 
@@ -32,7 +32,18 @@ export const AuthProvider = ({ children }) => {
   }, [user]);
 
   const login = async (email, password) => {
-    const u = await mockLogin(email, password);
+    // Call backend login endpoint (expects `username` + `password`)
+    const resp = await fetch('http://localhost/Portfolio/academic-scheduler/backend/login.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username: email, password }),
+    });
+    const data = await resp.json();
+    if (!data || !data.success) {
+      const msg = data?.message || 'Invalid credentials';
+      throw new Error(msg);
+    }
+    const u = data.user;
     setUser(u);
     return u;
   };
