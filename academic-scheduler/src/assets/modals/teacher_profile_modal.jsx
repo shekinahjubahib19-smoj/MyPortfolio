@@ -1,0 +1,105 @@
+import React, { useState, useEffect } from 'react';
+import '../css/registration.css';
+
+const TeacherProfileModal = ({ isOpen, onClose, user, onSaved }) => {
+  const [teacherCode, setTeacherCode] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [maxHours, setMaxHours] = useState(8);
+  const [subjects, setSubjects] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
+  const [working, setWorking] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const p = user?.profile || null;
+    setTeacherCode(p?.teacher_code || '');
+    setFirstName(p?.first_name || '');
+    setLastName(p?.last_name || '');
+    setMaxHours(p?.max_hours_per_day ?? 8);
+    setSubjects((p?.subjects || []).map(s => s.id));
+
+    // load available subjects
+    fetch('http://localhost/Portfolio/academic-scheduler/backend/api/list_subjects.php')
+      .then(r => r.json())
+      .then(j => { if (j.success) setAvailableSubjects(j.subjects || []); })
+      .catch(() => {});
+  }, [isOpen, user]);
+
+  if (!isOpen) return null;
+
+  const stop = (e) => e.stopPropagation();
+
+  const toggleSubject = (id) => {
+    setSubjects(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+  };
+
+  const handleSave = async () => {
+    setWorking(true);
+    setMessage('');
+    try {
+      const payload = {
+        user_id: user.id,
+        teacher_code: teacherCode,
+        first_name: firstName,
+        last_name: lastName,
+        max_hours_per_day: Number(maxHours) || 0,
+        subjects: subjects,
+      };
+      const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/update_teacher_profile.php', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      });
+      const json = await res.json();
+      if (json.success) {
+        setMessage('Saved');
+        if (onSaved) onSaved(json.profile);
+      } else {
+        setMessage(json.message || 'Save failed');
+      }
+    } catch (err) {
+      console.error(err);
+      setMessage('Failed to save');
+    } finally {
+      setWorking(false);
+    }
+  };
+
+  return (
+    <div className="registration-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="registration-modal" onClick={stop} style={{ maxWidth: 600 }}>
+        <button className="registration-close" onClick={onClose} aria-label="Close">×</button>
+        <h3 style={{ marginTop: 0, textAlign: 'center' }}>Teacher Profile</h3>
+        <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+          <label>Teacher Code</label>
+          <input className="input-field" value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} />
+          <label>First name</label>
+          <input className="input-field" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          <label>Last name</label>
+          <input className="input-field" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          <label>Max hours per day</label>
+          <input type="number" className="input-field" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} />
+
+          <label>Qualified subjects</label>
+          <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.04)', padding: '0.5rem' }}>
+            {availableSubjects.map(s => (
+              <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <input type="checkbox" checked={subjects.includes(s.id)} onChange={() => toggleSubject(s.id)} />
+                <span>{s.code || s.name} — {s.name}</span>
+              </div>
+            ))}
+            {availableSubjects.length === 0 && <p style={{ opacity: 0.7 }}>No subjects available</p>}
+          </div>
+
+          <div className="actions" style={{ marginTop: '0.5rem' }}>
+            <button className="btn secondary" onClick={onClose}>Cancel</button>
+            <button className="btn primary" onClick={handleSave} disabled={working}>{working ? 'Saving…' : 'Save'}</button>
+          </div>
+          {message && <p style={{ color: message.startsWith('Saved') ? '#47d147' : '#ff4d4d' }}>{message}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default TeacherProfileModal;

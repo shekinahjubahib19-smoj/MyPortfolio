@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import '../assets/css/user-management.css';
 import Registration from '../assets/modals/registration';
 import RegisterModal from '../assets/modals/register_modal';
+import TeacherProfileModal from '../assets/modals/teacher_profile_modal';
 import { useAuth } from '../context/AuthContext';
 
 const UserManagement = () => {
@@ -15,6 +16,8 @@ const UserManagement = () => {
   const [modalMessage, setModalMessage] = useState('');
   const [modalIsError, setModalIsError] = useState(false);
   const [modalSuccess, setModalSuccess] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const fetchRef = useRef(null);
 
@@ -101,24 +104,42 @@ const UserManagement = () => {
                 <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
                   <th style={{ padding: '0.5rem 0.75rem' }}>Username</th>
                   <th style={{ padding: '0.5rem 0.75rem' }}>Role</th>
+                  <th style={{ padding: '0.5rem 0.75rem' }}>Teacher Code</th>
+                  <th style={{ padding: '0.5rem 0.75rem' }}>Name</th>
+                  <th style={{ padding: '0.5rem 0.75rem' }}>Max Hours/Day</th>
                 </tr>
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)' }}>
+                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }} onClick={() => { setSelectedUser(u); setProfileModalOpen(true); }}>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{u.username}</td>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{u.role}</td>
+                    <td style={{ padding: '0.5rem 0.75rem' }}>{u.profile?.teacher_code ?? '-'}</td>
+                    <td style={{ padding: '0.5rem 0.75rem' }}>{u.profile ? `${u.profile.first_name ?? ''} ${u.profile.last_name ?? ''}`.trim() : '-'}</td>
+                    <td style={{ padding: '0.5rem 0.75rem' }}>{u.profile?.max_hours_per_day ?? '-'}</td>
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td colSpan={2} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>No users found</td>
+                    <td colSpan={5} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>No users found</td>
                   </tr>
                 )}
               </tbody>
             </table>
           </div>
         </div>
+
+          <TeacherProfileModal
+            isOpen={profileModalOpen}
+            onClose={() => { setProfileModalOpen(false); setSelectedUser(null); }}
+            user={selectedUser}
+            onSaved={(result) => {
+              // refresh list and close modal
+              setProfileModalOpen(false);
+              setSelectedUser(null);
+              if (fetchRef.current) fetchRef.current();
+            }}
+          />
       </div>
     </div>
   );

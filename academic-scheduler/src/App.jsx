@@ -33,6 +33,7 @@ import StudentAssignments from './pages/student-assignments';
 import Distribution from './pages/distribution';
 import RoomMgmt from './pages/room-mgmt';
 import SubjectList from './pages/subject-list';
+import SetUpProfile from './pages/set-up-profile';
 import './assets/css/landing.css';
 import { useLandingState } from './assets/js/landing';
 
@@ -78,13 +79,23 @@ function AppInner() {
 
       // If user just signed in and there's no route, default to dashboard
       if (user && (current === '' || current === '/')) {
-        window.location.hash = '#/dashboard';
+        // If teacher and profile incomplete, send to setup first
+        if (user.role === 'TEACHER' && !user.is_profile_complete) {
+          window.location.hash = '#/set-up-profile';
+        } else {
+          window.location.hash = '#/dashboard';
+        }
         return;
       }
 
       // If a non-admin user is on the admin-only `users` route, redirect
       if (user && user.role !== 'ADMIN' && current === 'users') {
         window.location.hash = '#/dashboard';
+      }
+
+      // If a teacher hasn't completed profile, always redirect to setup
+      if (user && user.role === 'TEACHER' && !user.is_profile_complete && current !== 'set-up-profile') {
+        window.location.hash = '#/set-up-profile';
       }
     } catch {
       // ignore - window may be unavailable in some environments
@@ -142,6 +153,8 @@ function AppInner() {
                 return <RoomMgmt />;
               case 'subjects':
                 return <SubjectList />;
+              case 'set-up-profile':
+                return <SetUpProfile />;
               case 'dashboard':
               case '':
               default:
