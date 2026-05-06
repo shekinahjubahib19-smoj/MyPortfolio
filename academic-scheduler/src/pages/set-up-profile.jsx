@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useRef } from 'react';
 import '../assets/css/subject-list.css';
+import '../assets/css/set-up-profile.css';
 import { useAuth } from '../context/AuthContext';
+import { fetchSubjects, fetchUserProfile, saveTeacherProfile } from '../assets/js/set-up-profile';
 
 const SetUpProfile = () => {
   const { user } = useAuth();
@@ -10,37 +12,36 @@ const SetUpProfile = () => {
   const [maxHours, setMaxHours] = useState(8);
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [selectedSubjects, setSelectedSubjects] = useState([]);
+  const [query, setQuery] = useState('');
   const [message, setMessage] = useState('');
   const [working, setWorking] = useState(false);
+  const [step, setStep] = useState(1); // 1: inputs, 2: subjects, 3: preview
   const didLoad = useRef(false);
 
   useEffect(() => {
-    // load available subjects once
+    // load available subjects once and prefill profile when possible
     if (didLoad.current) return;
     didLoad.current = true;
-    fetch('http://localhost/Portfolio/academic-scheduler/backend/api/list_subjects.php')
-      .then(r => r.json())
-      .then(j => {
-        if (j && j.success) setAvailableSubjects(j.subjects || []);
-      })
-      .catch((err) => { console.warn('Failed to load subjects', err); });
-
-    // try to prefill from users list (backend returns profile info with users)
     (async () => {
       try {
-        const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/list_users.php');
-        const j = await res.json();
-        if (j && j.success) {
-          const me = (j.users || []).find(u => String(u.id) === String(user?.id));
-          if (me && me.profile) {
-            setTeacherCode(me.profile.teacher_code || '');
-            setFirstName(me.profile.first_name || '');
-            setLastName(me.profile.last_name || '');
-            setMaxHours(me.profile.max_hours_per_day ?? 8);
-            setSelectedSubjects((me.profile.subjects || []).map(s => s.id));
-          }
+        const subs = await fetchSubjects();
+        setAvailableSubjects(subs || []);
+      } catch (err) {
+        console.warn('Failed to load subjects', err);
+      }
+
+      try {
+        const profile = await fetchUserProfile(user?.id);
+        if (profile) {
+          setTeacherCode(profile.teacher_code || '');
+          setFirstName((profile.first_name || '').toUpperCase());
+          setLastName((profile.last_name || '').toUpperCase());
+          setMaxHours(profile.max_hours_per_day ?? 8);
+          setSelectedSubjects((profile.subjects || []).map(s => s.id));
         }
-      } catch (err) { console.warn('Prefill users failed', err); }
+      } catch (err) {
+        console.warn('Prefill users failed', err);
+      }
     })();
   }, [user]);
 
@@ -48,8 +49,56 @@ const SetUpProfile = () => {
     setSelectedSubjects(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const clearInputs = () => {
+    setTeacherCode('');
+    setFirstName('');
+    setLastName('');
+    setMaxHours(8);
+    setSelectedSubjects([]);
+    setMessage('');
+  };
+
+  const clearSubjects = () => {
+    setSelectedSubjects([]);
+    setMessage('');
+  };
+
+  const validateStep1 = () => {
+    if (!teacherCode || !firstName || !lastName) {
+      setMessage('Please fill Teacher Code, First name and Last name.');
+      return false;
+    }
+    if (!Number(maxHours) || Number(maxHours) <= 0) {
+      setMessage('Max hours per day must be greater than zero.');
+      return false;
+    }
+    setMessage('');
+    return true;
+  };
+
+  const goNext = () => {
+    if (step === 1) {
+      if (!validateStep1()) return;
+      setStep(2);
+      return;
+    }
+    if (step === 2) {
+      if (!selectedSubjects || selectedSubjects.length === 0) {
+        setMessage('Please select at least one qualified subject to continue.');
+        return;
+      }
+      setMessage('');
+      setStep(3);
+      return;
+    }
+  };
+
+  const goPrev = () => {
+    setMessage('');
+    setStep(prev => Math.max(1, prev - 1));
+  };
+
+  const handleSave = async () => {
     if (!user) return;
     setWorking(true);
     setMessage('');
@@ -62,13 +111,9 @@ const SetUpProfile = () => {
         max_hours_per_day: Number(maxHours) || 0,
         subjects: selectedSubjects,
       };
-      const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/update_teacher_profile.php', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
-      });
-      const json = await res.json();
-      if (json.success) {
+      const json = await saveTeacherProfile(payload);
+      if (json && json.success) {
         setMessage('Profile saved. Redirecting...');
-        // mark profile complete in local storage user record so redirect logic works
         try {
           const raw = window.localStorage.getItem('mock_auth_user');
           if (raw) {
@@ -99,40 +144,152 @@ const SetUpProfile = () => {
       </header>
 
       <div className="um-list">
-        <div style={{ padding: '0 1rem', maxWidth: 720 }}>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-            <label>Teacher Code</label>
-            <input className="input-field" value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} placeholder="2026001" />
+        <div style={{ padding: '0 0rem', maxWidth: 1100, margin: '0 auto' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', minHeight: 520 }}>
+            <div className="setup-steps">
+              <div className={"setup-step " + (step === 1 ? 'active' : '')}>
+                <div className="circle">1</div>
+                <div className="label">Inputs</div>
+              </div>
+              <div className={"setup-step " + (step === 2 ? 'active' : '')}>
+                <div className="circle">2</div>
+                <div className="label">Subjects</div>
+              </div>
+              <div className={"setup-step " + (step === 3 ? 'active' : '')}>
+                <div className="circle">3</div>
+                <div className="label">Preview</div>
+              </div>
+            </div>
 
-            <label>First name</label>
-            <input className="input-field" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: (step === 3 ? 'center' : 'flex-start') }}>
+              <form
+                onSubmit={(e) => e.preventDefault()}
+                style={{ width: 560, marginLeft: (step === 3 ? 0 : '-1rem') }}
+              >
+                {step === 1 && (
+                  <div style={{ marginTop: 8 }}>
+                    <div className="setup-section">
+                      <label>Teacher Code</label>
+                      <input className="setup-input" value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} placeholder="2026001" />
+                    </div>
 
-            <label>Last name</label>
-            <input className="input-field" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                    <div className="setup-section">
+                      <label>First name</label>
+                      <input className="setup-input" value={firstName} onChange={(e) => setFirstName(e.target.value.toUpperCase())} />
+                    </div>
 
-            <label>Max hours per day</label>
-            <input type="number" className="input-field" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} />
+                    <div className="setup-section">
+                      <label>Last name</label>
+                      <input className="setup-input" value={lastName} onChange={(e) => setLastName(e.target.value.toUpperCase())} />
+                    </div>
 
-            <label>Qualified subjects</label>
-            <div style={{ border: '1px solid rgba(255,255,255,0.04)', padding: '0.5rem', maxHeight: 240, overflowY: 'auto' }}>
-              {availableSubjects.map(s => (
-                <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '0.25rem 0' }}>
-                  <input type="checkbox" checked={selectedSubjects.includes(s.id)} onChange={() => toggleSubject(s.id)} />
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <strong style={{ fontSize: '0.95rem' }}>{s.code || (s.name ? (s.name.toUpperCase().slice(0,3) + '-' + (100 + s.id)) : '')}</strong>
-                    <span style={{ opacity: 0.8, fontSize: '0.85rem' }}>{s.name}</span>
+                    <div className="setup-section">
+                      <label>Max hours per day</label>
+                      <input type="number" className="setup-input" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} />
+                    </div>
                   </div>
-                </div>
-              ))}
-              {availableSubjects.length === 0 && <p style={{ opacity: 0.7 }}>No subjects available yet.</p>}
+                )}
+
+                {step === 2 && (
+                  <div>
+                    <label>Qualified subjects</label>
+                    <div style={{ marginTop: 0 }}>
+                      <div className="setup-search">
+                        <input
+                          className="setup-input"
+                          placeholder="Search by code or name..."
+                          value={query}
+                          onChange={(e) => setQuery(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="setup-table-container" style={{ border: '1px solid rgba(255,255,255,0.04)', padding: '0.25rem' }}>
+                        <table className="setup-table">
+                          <thead>
+                            <tr>
+                              <th className="col-code">Code</th>
+                              <th>Subject name</th>
+                              <th className="col-hours">Hours</th>
+                              <th className="col-check">Add</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {availableSubjects.filter(s => {
+                              if (!query) return true;
+                              const q = query.trim().toLowerCase();
+                              const code = (s.code || '').toLowerCase();
+                              const name = (s.name || '').toLowerCase();
+                              return code.includes(q) || name.includes(q);
+                            }).map(s => {
+                              const hours = s.hours ?? s.default_hours ?? s.required_hours ?? '';
+                              return (
+                                <tr key={s.id}>
+                                  <td className="col-code">{s.code || (s.name ? (s.name.toUpperCase().slice(0,3) + '-' + (100 + s.id)) : '')}</td>
+                                  <td>{s.name}</td>
+                                  <td className="col-hours">{hours}</td>
+                                  <td className="col-check">
+                                    <input type="checkbox" checked={selectedSubjects.includes(s.id)} onChange={() => toggleSubject(s.id)} />
+                                  </td>
+                                </tr>
+                              );
+                            })}
+                            {availableSubjects.length === 0 && (
+                              <tr><td colSpan={4} style={{ opacity: 0.7 }}>No subjects available yet.</td></tr>
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {step === 3 && (
+                  <div>
+                    <h3 style={{ textAlign: 'center' }}>Preview</h3>
+                    <div style={{ display: 'flex', gap: 12 }}>
+                      <div style={{ flex: 1 }}>
+                        <p><strong>Teacher Code:</strong> {teacherCode}</p>
+                        <p><strong>First name:</strong> {firstName}</p>
+                        <p><strong>Last name:</strong> {lastName}</p>
+                        <p><strong>Max hours/day:</strong> {maxHours}</p>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <p><strong>Qualified subjects:</strong></p>
+                        <ul>
+                          {availableSubjects.filter(s => selectedSubjects.includes(s.id)).map(s => (
+                            <li key={s.id}>{(s.code || s.name)} — {s.name} ({s.hours ?? s.default_hours ?? ''})</li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </form>
             </div>
 
-            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-              <button className="btn secondary" type="button" onClick={() => { window.location.hash = '#/dashboard'; }}>Skip</button>
-              <button className="btn primary" type="submit" disabled={working}>{working ? 'Saving…' : 'Save & Continue'}</button>
+            <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem' }}>
+              {step === 1 && (
+                <>
+                  <button className="btn secondary" type="button" onClick={clearInputs}>Clear</button>
+                  <button className="btn primary" type="button" onClick={goNext} disabled={working}>{working ? 'Working…' : 'Next'}</button>
+                </>
+              )}
+              {step === 2 && (
+                <>
+                  <button className="btn secondary" type="button" onClick={clearSubjects}>Clear</button>
+                  <button className="btn secondary" type="button" onClick={goPrev}>Prev</button>
+                  <button className="btn primary" type="button" onClick={goNext} disabled={working}>{working ? 'Working…' : 'Next'}</button>
+                </>
+              )}
+              {step === 3 && (
+                <>
+                  <button className="btn secondary" type="button" onClick={goPrev}>Prev</button>
+                  <button className="btn primary" type="button" onClick={handleSave} disabled={working}>{working ? 'Saving…' : 'Save'}</button>
+                </>
+              )}
             </div>
-            {message && <p style={{ color: message.startsWith('Profile saved') ? '#47d147' : '#ff4d4d' }}>{message}</p>}
-          </form>
+            {message && <p style={{ textAlign: 'center', color: message.startsWith('Profile saved') ? '#47d147' : '#ff4d4d' }}>{message}</p>}
+          </div>
         </div>
       </div>
     </div>

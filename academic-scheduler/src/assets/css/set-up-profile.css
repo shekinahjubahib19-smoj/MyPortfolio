@@ -1,0 +1,84 @@
+/* Styles specific to the Set Up Profile page */
+.setup-root { }
+
+.setup-input {
+  width: 100%;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.10);
+  border-radius: 1rem;
+  padding: 0.7rem 0.9rem;
+  color: #ffffff;
+  transition: box-shadow 0.12s ease, border-color 0.12s ease;
+  backdrop-filter: blur(6px);
+  box-sizing: border-box;
+}
+.setup-input::placeholder { color: #94a3b8; }
+.setup-input:focus { outline: none; box-shadow: 0 0 0 8px rgba(59,130,246,0.08); border-color: rgba(59,130,246,0.5); }
+
+.setup-list-container { max-width: 720px; padding: 0 1rem; }
+
+.setup-section { margin-bottom: 0.75rem; }
+
+/* Two-column layout: inputs on the left, subjects on the right */
+.setup-grid {
+  display: grid;
+  grid-template-columns: 1fr 480px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.setup-left { display: flex; flex-direction: column; gap: 0.75rem; }
+.setup-right { padding-top: 0; }
+
+@media (max-width: 880px) {
+  .setup-grid { grid-template-columns: 1fr; }
+}
+
+/* Table styles for qualified subjects */
+.setup-search { margin-bottom: 0.5rem; margin-top: 0; }
+.setup-table { width: 100%; border-collapse: collapse; color: #e6eef8; }
+.setup-table thead th { text-align: left; padding: 0.5rem; font-size: 0.9rem; color: #cbd5e1; }
+.setup-table tbody td { padding: 0.5rem; vertical-align: middle; border-top: 1px solid rgba(255,255,255,0.02); }
+.setup-table tbody tr:hover { background: rgba(255,255,255,0.01); }
+.setup-table .col-code { width: 110px; font-weight: 700; }
+.setup-table .col-hours { width: 90px; }
+.setup-table .col-check { width: 48px; text-align: center; }
+.setup-search .setup-input { width: 100%; }
+
+/* Scrolling container for the table with fixed height and sticky header */
+.setup-table-container {
+  max-height: 220px;
+  overflow-y: auto;
+  border-radius: 6px;
+}
+
+/* Step indicator */
+.setup-steps { display:flex; gap:1.25rem; justify-content:center; margin: 0.75rem 0 1.25rem 0; }
+.setup-step { display:flex; flex-direction:column; align-items:center; color: rgba(255,255,255,0.65); font-size:0.85rem; }
+.setup-step .circle { width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; margin-bottom:0.35rem; border:2px solid rgba(255,255,255,0.06); }
+.setup-step.active { color: #fff; }
+.setup-step.active .circle { background: linear-gradient(90deg,#2B59C3,#A336F1); border-color: transparent; }
+.setup-step .label { white-space:nowrap; }
+.setup-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  /* Match other tables' header gradient */
+  background: linear-gradient(#2B59C3, #673AB7, #A336F1);
+  color: #fff;
+}
+
+/* Larger checkboxes and alignment */
+.setup-table input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  transform: scale(1.1);
+  margin: 0;
+}
+.setup-table td .col-check, .setup-table td { vertical-align: middle; }
+
+@media (max-width: 880px) {
+  .setup-table thead { display: none; }
+  .setup-table tbody td { display: block; width: 100%; }
+  .setup-table tbody tr { display: block; margin-bottom: 0.75rem; border: 1px solid rgba(255,255,255,0.02); padding: 0.5rem; }
+}
