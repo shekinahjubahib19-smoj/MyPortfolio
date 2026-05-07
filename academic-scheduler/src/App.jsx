@@ -34,11 +34,12 @@ import Distribution from './pages/distribution';
 import RoomMgmt from './pages/room-mgmt';
 import SubjectList from './pages/subject-list';
 import SetUpProfile from './pages/set-up-profile';
+import ChangePassModal from './assets/modals/change-pass';
 import './assets/css/landing.css';
 import { useLandingState } from './assets/js/landing';
 
 function AppInner() {
-  const { user } = useAuth();
+  const { user, logout, updateUser } = useAuth();
   const {
     mousePos,
     showLogin,
@@ -77,10 +78,17 @@ function AppInner() {
 
       const current = (window.location.hash || '').replace('#/', '');
 
+      if (user.must_change_password) {
+        if (current !== 'dashboard') {
+          window.location.hash = '#/dashboard';
+        }
+        return;
+      }
+
       // If user just signed in and there's no route, default to dashboard
       if (user && (current === '' || current === '/')) {
-        // If teacher and profile incomplete, send to setup first
-        if (user.role === 'TEACHER' && !user.is_profile_complete) {
+        // If profile incomplete, send to setup first
+        if ((user.role === 'TEACHER' || user.role === 'ADMIN') && !user.is_profile_complete) {
           window.location.hash = '#/set-up-profile';
         } else {
           window.location.hash = '#/dashboard';
@@ -93,14 +101,27 @@ function AppInner() {
         window.location.hash = '#/dashboard';
       }
 
-      // If a teacher hasn't completed profile, always redirect to setup
-      if (user && user.role === 'TEACHER' && !user.is_profile_complete && current !== 'set-up-profile') {
+      // If a user hasn't completed profile, always redirect to setup
+      if (user && (user.role === 'TEACHER' || user.role === 'ADMIN') && !user.is_profile_complete && current !== 'set-up-profile') {
         window.location.hash = '#/set-up-profile';
       }
     } catch {
       // ignore - window may be unavailable in some environments
     }
   }, [user, route]);
+
+  const [showChangePass, setShowChangePass] = React.useState(false);
+
+  React.useEffect(() => {
+    setShowChangePass(!!user?.must_change_password);
+  }, [user]);
+
+  const handlePasswordChanged = () => {
+    if (typeof updateUser === 'function') {
+      updateUser({ must_change_password: false });
+    }
+    setShowChangePass(false);
+  };
 
   return (
       <div 
@@ -137,6 +158,12 @@ function AppInner() {
       {/* If logged in show Dashboard, otherwise show landing split */}
       {user ? (
         <div className="app-root relative z-20">
+          <ChangePassModal
+            isOpen={showChangePass}
+            user={user}
+            onChanged={handlePasswordChanged}
+            onLogout={logout}
+          />
           {(() => {
             switch (route) {
               case 'users':

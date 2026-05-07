@@ -52,7 +52,7 @@ try {
 
     $hashed_password = password_hash($password, PASSWORD_DEFAULT);
 
-    $query = "INSERT INTO users (username, password_hash, role, is_profile_complete) VALUES (?, ?, ?, 0)";
+    $query = "INSERT INTO users (username, password_hash, role, is_profile_complete, must_change_password) VALUES (?, ?, ?, 0, 1)";
     $stmt = $conn->prepare($query);
     if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
     $stmt->bind_param("sss", $username, $hashed_password, $role);

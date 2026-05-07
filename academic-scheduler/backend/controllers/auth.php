@@ -29,7 +29,11 @@ if (!$user) {
 
 if (password_verify($password, $user['password_hash'])) {
     echo json_encode(['success' => true, 'user' => [
-        'id' => $user['id'], 'username' => $user['username'], 'role' => $user['role'], 'is_profile_complete' => (bool)$user['is_profile_complete']
+        'id' => $user['id'],
+        'username' => $user['username'],
+        'role' => $user['role'],
+        'is_profile_complete' => (bool)$user['is_profile_complete'],
+        'must_change_password' => (bool)$user['must_change_password'],
     ]]);
 } else {
     echo json_encode(['success' => false, 'message' => 'Invalid password']);

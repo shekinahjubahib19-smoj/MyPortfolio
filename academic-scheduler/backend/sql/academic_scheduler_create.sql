@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS users (
   password_hash VARCHAR(255) NOT NULL,
   role ENUM('ADMIN','TEACHER') NOT NULL DEFAULT 'TEACHER',
   is_profile_complete TINYINT(1) NOT NULL DEFAULT 0,
+  must_change_password TINYINT(1) NOT NULL DEFAULT 1,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
@@ -64,12 +65,13 @@ CREATE TABLE IF NOT EXISTS teacher_assignments (
 ) ENGINE=InnoDB;
 
 -- 6. Seed admin account (password hash for 'admin123')
-INSERT IGNORE INTO users (username, password_hash, role, is_profile_complete)
+INSERT IGNORE INTO users (username, password_hash, role, is_profile_complete, must_change_password)
 VALUES (
   'admin_user',
   '$2y$10$9vaDS32NxAIGEsQZfTylguhD8tvUWBpyOAaASMljbZbS7h.PmvCEG',
   'ADMIN',
-  1
+  1,
+  0
 );
 
 -- 7. Optional: seed example subjects

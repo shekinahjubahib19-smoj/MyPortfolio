@@ -25,17 +25,17 @@ try {
             'profile' => null,
         ];
 
-        if (strtoupper($r['role']) === 'TEACHER') {
-            // load teacher profile
-            $stmt = $conn->prepare("SELECT id, teacher_code, first_name, last_name, max_hours_per_day, total_rendered_hours FROM teacher_profiles WHERE user_id = ? LIMIT 1");
-            if ($stmt) {
-                $stmt->bind_param('i', $r['id']);
-                $stmt->execute();
-                $pr = $stmt->get_result()->fetch_assoc();
-                if ($pr) {
-                    // load subjects for this teacher
+        // load profile for any user role
+        $stmt = $conn->prepare("SELECT id, teacher_code, first_name, last_name, max_hours_per_day, total_rendered_hours FROM teacher_profiles WHERE user_id = ? LIMIT 1");
+        if ($stmt) {
+            $stmt->bind_param('i', $r['id']);
+            $stmt->execute();
+            $pr = $stmt->get_result()->fetch_assoc();
+            if ($pr) {
+                $subjects = [];
+                if (strtoupper($r['role']) === 'TEACHER') {
+                    // load subjects for teachers only
                     $subStmt = $conn->prepare("SELECT s.id, s.subject_name, s.subject_code, s.default_hours FROM teacher_subjects ts JOIN subjects s ON ts.subject_id = s.id WHERE ts.teacher_profile_id = ? ORDER BY s.subject_name");
-                    $subjects = [];
                     if ($subStmt) {
                         $subStmt->bind_param('i', $pr['id']);
                         $subStmt->execute();
@@ -50,18 +50,18 @@ try {
                         }
                         $subStmt->close();
                     }
-
-                    $user['profile'] = [
-                        'teacher_code' => $pr['teacher_code'],
-                        'first_name' => $pr['first_name'],
-                        'last_name' => $pr['last_name'],
-                        'max_hours_per_day' => $pr['max_hours_per_day'],
-                        'total_rendered_hours' => $pr['total_rendered_hours'],
-                        'subjects' => $subjects,
-                    ];
                 }
-                $stmt->close();
+
+                $user['profile'] = [
+                    'teacher_code' => $pr['teacher_code'],
+                    'first_name' => $pr['first_name'],
+                    'last_name' => $pr['last_name'],
+                    'max_hours_per_day' => $pr['max_hours_per_day'],
+                    'total_rendered_hours' => $pr['total_rendered_hours'],
+                    'subjects' => $subjects,
+                ];
             }
+            $stmt->close();
         }
 
         $rows[] = $user;

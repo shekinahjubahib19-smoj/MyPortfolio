@@ -5,6 +5,7 @@ import { fetchSubjects, fetchUserProfile, saveTeacherProfile } from '../assets/j
 import SetupProfileResult from '../assets/modals/setup-profile-result';
 const SetUpProfile = () => {
   const { user, updateUser } = useAuth();
+  const isAdmin = user?.role === 'ADMIN';
   const [teacherCode, setTeacherCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -54,6 +55,7 @@ const SetUpProfile = () => {
 
   const clearInputs = () => {
     setTeacherCode('');
+    setFirstName('');
     setLastName('');
     setMaxHours(8);
     setSelectedSubjects([]);
@@ -67,10 +69,10 @@ const SetUpProfile = () => {
 
   const validateStep1 = () => {
     if (!teacherCode || !firstName || !lastName) {
-      setMessage('Please fill Teacher Code, First name and Last name.');
+      setMessage(`Please fill ${isAdmin ? 'User Code' : 'Teacher Code'}, First name and Last name.`);
       return false;
     }
-    if (!Number(maxHours) || Number(maxHours) <= 0) {
+    if (!isAdmin && (!Number(maxHours) || Number(maxHours) <= 0)) {
       setMessage('Max hours per day must be greater than zero.');
       return false;
     }
@@ -110,13 +112,13 @@ const SetUpProfile = () => {
         teacher_code: teacherCode,
         first_name: firstName,
         last_name: lastName,
-        max_hours_per_day: Number(maxHours) || 0,
-        subjects: selectedSubjects,
+        max_hours_per_day: isAdmin ? 8 : (Number(maxHours) || 0),
+        subjects: isAdmin ? [] : selectedSubjects,
       };
       const json = await saveTeacherProfile(payload);
       if (json && json.success) {
         setResultError(false);
-        setResultMessage('Saved successfully. Only admins can view or update profile details.');
+        setResultMessage(isAdmin ? 'Saved successfully.' : 'Saved successfully. Only admins can view or update profile details.');
         setResultRedirect(true);
         setResultOpen(true);
       } else {
@@ -172,58 +174,65 @@ const SetUpProfile = () => {
       <header className="setup-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1>Set Up Profile</h1>
-          <p className="setup-sub">Complete your teacher profile before using the system</p>
+          <p className="setup-sub">
+            {isAdmin ? 'Complete your admin profile before using the system' : 'Complete your teacher profile before using the system'}
+          </p>
         </div>
       </header>
 
       <div className="setup-list">
         <div style={{ padding: '0 0rem', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 520 }}>
-            <div className="setup-steps">
-              <div className={"setup-step " + (step === 1 ? 'active' : '')}>
-                <div className="circle">1</div>
-                <div className="label">Inputs</div>
+            {!isAdmin && (
+              <div className="setup-steps">
+                <div className={"setup-step " + (step === 1 ? 'active' : '')}>
+                  <div className="circle">1</div>
+                  <div className="label">Inputs</div>
+                </div>
+                <div className={"setup-step " + (step === 2 ? 'active' : '')}>
+                  <div className="circle">2</div>
+                  <div className="label">Subjects</div>
+                </div>
+                <div className={"setup-step " + (step === 3 ? 'active' : '')}>
+                  <div className="circle">3</div>
+                  <div className="label">Preview</div>
+                </div>
               </div>
-              <div className={"setup-step " + (step === 2 ? 'active' : '')}>
-                <div className="circle">2</div>
-                <div className="label">Subjects</div>
-              </div>
-              <div className={"setup-step " + (step === 3 ? 'active' : '')}>
-                <div className="circle">3</div>
-                <div className="label">Preview</div>
-              </div>
-            </div>
+            )}
 
             <div style={{ flex: 1, display: 'flex', justifyContent: 'center', alignItems: (step === 3 ? 'center' : 'flex-start') }}>
               <form
                 onSubmit={(e) => e.preventDefault()}
+                className={isAdmin ? 'setup-admin-form' : ''}
                 style={{ width: 560, marginLeft: (step === 3 ? 0 : '-1rem') }}
               >
-                {step === 1 && (
+                {(isAdmin || step === 1) && (
                   <div style={{ marginTop: 8 }}>
                     <div className="setup-section">
-                      <label>Teacher Code</label>
-                      <input className="setup-input" value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} placeholder="2026001" />
+                      <label>{isAdmin ? 'User Code' : 'Teacher Code'}</label>
+                      <input className="setup-input" value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} placeholder="e.g., 2026001" />
                     </div>
 
                     <div className="setup-section">
                       <label>First name</label>
-                      <input className="setup-input" value={firstName} onChange={(e) => setFirstName(e.target.value.toUpperCase())} />
+                      <input className="setup-input" value={firstName} onChange={(e) => setFirstName(e.target.value.toUpperCase())} placeholder="e.g., John" />
                     </div>
 
                     <div className="setup-section">
                       <label>Last name</label>
-                      <input className="setup-input" value={lastName} onChange={(e) => setLastName(e.target.value.toUpperCase())} />
+                      <input className="setup-input" value={lastName} onChange={(e) => setLastName(e.target.value.toUpperCase())} placeholder="e.g., Doe" />
                     </div>
 
-                    <div className="setup-section">
-                      <label>Max hours per day</label>
-                      <input type="number" className="setup-input" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} />
-                    </div>
+                    {!isAdmin && (
+                      <div className="setup-section">
+                        <label>Max hours per day</label>
+                        <input type="number" className="setup-input" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} placeholder="e.g., 8" />
+                      </div>
+                    )}
                   </div>
                 )}
 
-                {step === 2 && (
+                {!isAdmin && step === 2 && (
                   <div>
                     <label>Qualified subjects</label>
                     <div style={{ marginTop: 0 }}>
@@ -276,7 +285,7 @@ const SetUpProfile = () => {
                   </div>
                 )}
 
-                {step === 3 && (
+                {!isAdmin && step === 3 && (
                   <div>
                     <div className="setup-preview" style={{ marginTop: -5 }}>
                       <div className="setup-preview-card">
@@ -328,23 +337,32 @@ const SetUpProfile = () => {
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', gap: '0.75rem', marginTop: '1rem' }}>
-              {step === 1 && (
+              {isAdmin ? (
                 <>
                   <button className="btn secondary" type="button" onClick={clearInputs}>Clear</button>
-                  <button className="btn primary" type="button" onClick={goNext} disabled={working}>{working ? 'Working…' : 'Next'}</button>
-                </>
-              )}
-              {step === 2 && (
-                <>
-                  <button className="btn secondary" type="button" onClick={clearSubjects}>Clear</button>
-                  <button className="btn secondary" type="button" onClick={goPrev}>Prev</button>
-                  <button className="btn primary" type="button" onClick={goNext} disabled={working}>{working ? 'Working…' : 'Next'}</button>
-                </>
-              )}
-              {step === 3 && (
-                <>
-                  <button className="btn secondary" type="button" onClick={goPrev}>Prev</button>
                   <button className="btn primary" type="button" onClick={handleSave} disabled={working}>{working ? 'Saving…' : 'Save'}</button>
+                </>
+              ) : (
+                <>
+                  {step === 1 && (
+                    <>
+                      <button className="btn secondary" type="button" onClick={clearInputs}>Clear</button>
+                      <button className="btn primary" type="button" onClick={goNext} disabled={working}>{working ? 'Working…' : 'Next'}</button>
+                    </>
+                  )}
+                  {step === 2 && (
+                    <>
+                      <button className="btn secondary" type="button" onClick={clearSubjects}>Clear</button>
+                      <button className="btn secondary" type="button" onClick={goPrev}>Prev</button>
+                      <button className="btn primary" type="button" onClick={goNext} disabled={working}>{working ? 'Working…' : 'Next'}</button>
+                    </>
+                  )}
+                  {step === 3 && (
+                    <>
+                      <button className="btn secondary" type="button" onClick={goPrev}>Prev</button>
+                      <button className="btn primary" type="button" onClick={handleSave} disabled={working}>{working ? 'Saving…' : 'Save'}</button>
+                    </>
+                  )}
                 </>
               )}
             </div>
