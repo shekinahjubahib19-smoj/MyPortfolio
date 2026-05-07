@@ -15,6 +15,11 @@
   pointer-events: none;
 }
 
+/* Decorative glow blobs should never block clicks */
+.landing-bg-decor {
+  pointer-events: none;
+}
+
 /* Main container. Use relative positioning so login overlay can sit above. */
 .landing-split {
   position: relative;

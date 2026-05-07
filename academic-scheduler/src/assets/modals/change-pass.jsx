@@ -19,6 +19,24 @@ const ChangePassModal = ({ isOpen, user, onChanged, onLogout }) => {
 
   if (!isOpen) return null;
 
+  const passwordRules = {
+    length: (value) => value.length >= 8 && value.length <= 12,
+    upper: (value) => /[A-Z]/.test(value),
+    lower: (value) => /[a-z]/.test(value),
+    number: (value) => /\d/.test(value),
+    special: (value) => /[^A-Za-z0-9]/.test(value),
+  };
+
+  const ruleState = {
+    length: passwordRules.length(newPass),
+    upper: passwordRules.upper(newPass),
+    lower: passwordRules.lower(newPass),
+    number: passwordRules.number(newPass),
+    special: passwordRules.special(newPass),
+  };
+
+  const isPasswordValid = Object.values(ruleState).every(Boolean);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setMessage('');
@@ -28,8 +46,8 @@ const ChangePassModal = ({ isOpen, user, onChanged, onLogout }) => {
       return;
     }
 
-    if (newPass.length < 6) {
-      setMessage('New password must be at least 6 characters.');
+    if (!isPasswordValid) {
+      setMessage('Password must meet all requirements.');
       return;
     }
 
@@ -107,6 +125,17 @@ const ChangePassModal = ({ isOpen, user, onChanged, onLogout }) => {
               placeholder="Confirm new password"
               required
             />
+          </div>
+
+          <div style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: '0.5rem', padding: '0.6rem 0.75rem' }}>
+            <div style={{ fontSize: '0.8rem', opacity: 0.8, marginBottom: '0.35rem' }}>Password requirements</div>
+            <div style={{ display: 'grid', gap: '0.25rem' }}>
+              <div style={{ color: ruleState.upper ? '#47d147' : '#ff8f8f' }}>• At least 1 capital letter</div>
+              <div style={{ color: ruleState.lower ? '#47d147' : '#ff8f8f' }}>• At least 1 small letter</div>
+              <div style={{ color: ruleState.number ? '#47d147' : '#ff8f8f' }}>• At least 1 number</div>
+              <div style={{ color: ruleState.special ? '#47d147' : '#ff8f8f' }}>• At least 1 special character</div>
+              <div style={{ color: ruleState.length ? '#47d147' : '#ff8f8f' }}>• 8 to 12 characters</div>
+            </div>
           </div>
 
           {message && (

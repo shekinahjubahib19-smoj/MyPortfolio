@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import '../css/registration.css';
 
-const TeacherProfileModal = ({ isOpen, onClose, user, onSaved }) => {
+const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false }) => {
   const [teacherCode, setTeacherCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -32,6 +32,7 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved }) => {
   const stop = (e) => e.stopPropagation();
 
   const toggleSubject = (id) => {
+    if (readOnly) return;
     setSubjects(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
   };
 
@@ -64,6 +65,70 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved }) => {
       setWorking(false);
     }
   };
+  if (readOnly) {
+    // render a read-only preview similar to setup preview
+    return (
+      <div className="registration-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+        <div className="registration-modal" onClick={stop} style={{ maxWidth: 720 }}>
+          <button className="registration-close" onClick={onClose} aria-label="Close">×</button>
+          <h3 style={{ marginTop: 0, textAlign: 'center' }}>Profile Preview</h3>
+          <div className="setup-preview" style={{ marginTop: -5 }}>
+            <div className="setup-preview-card">
+              <table className="setup-preview-summary-table">
+                <thead>
+                  <tr>
+                    <th>Teacher Code</th>
+                    <th>Full Name</th>
+                    <th>Hours Available</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>{teacherCode || '-'}</td>
+                    <td>{(firstName || '') + (lastName ? ' ' + lastName : '')}</td>
+                    <td>{maxHours ? `${maxHours} hours` : '-'}</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className="setup-preview-subjects-container" style={{ marginTop: 12 }}>
+                <table className="setup-preview-subjects-table">
+                  <thead>
+                    <tr className="setup-preview-subtitle-row">
+                      <th colSpan={3}>Qualified Subject/s</th>
+                    </tr>
+                    <tr>
+                      <th>Subject Code</th>
+                      <th>Subject Name</th>
+                      <th>Duration</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {(availableSubjects || []).filter(s => subjects.includes(s.id)).map(s => (
+                      <tr key={s.id}>
+                        <td>{s.code || s.name}</td>
+                        <td>{s.name}</td>
+                        <td>{(s.hours ?? s.default_hours ?? '') ? `${s.hours ?? s.default_hours ?? ''} hour` : ''}</td>
+                      </tr>
+                    ))}
+                    {((availableSubjects || []).filter(s => subjects.includes(s.id)).length === 0) && (
+                      <tr>
+                        <td colSpan={3} style={{ opacity: 0.7, textAlign: 'center' }}>No subjects selected</td>
+                      </tr>
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="actions" style={{ marginTop: '0.75rem', display: 'flex', justifyContent: 'center', gap: '0.75rem' }}>
+              <button className="btn secondary" onClick={onClose}>Close</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="registration-overlay" role="dialog" aria-modal="true" onClick={onClose}>

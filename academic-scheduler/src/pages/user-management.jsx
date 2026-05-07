@@ -18,6 +18,7 @@ const UserManagement = () => {
   const [modalSuccess, setModalSuccess] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
+  const [profileReadOnly, setProfileReadOnly] = useState(false);
 
   const fetchRef = useRef(null);
 
@@ -35,6 +36,14 @@ const UserManagement = () => {
     // initial load
     fetchRef.current();
   }, []);
+
+  useEffect(() => {
+    // Defensive cleanup: if no local modals are open, remove any leftover overlays.
+    if (isRegOpen || modalOpen || profileModalOpen) return;
+    const overlays = document.querySelectorAll('.registration-overlay');
+    if (overlays.length === 0) return;
+    overlays.forEach((overlay) => overlay.remove());
+  }, [isRegOpen, modalOpen, profileModalOpen]);
 
   if (!user || user?.role !== 'ADMIN') {
     return (
@@ -83,7 +92,9 @@ const UserManagement = () => {
         <RegisterModal
           isOpen={modalOpen}
           onClose={() => {
+            // ensure both modals/forms are closed and refresh list on success
             setModalOpen(false);
+            setRegOpen(false);
             if (modalSuccess && fetchRef.current) fetchRef.current();
             // bump regKey to force remount/refresh of Registration component
             setRegKey((k) => k + 1);
@@ -111,7 +122,7 @@ const UserManagement = () => {
               </thead>
               <tbody>
                 {users.map((u) => (
-                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }} onClick={() => { setSelectedUser(u); setProfileModalOpen(true); }}>
+                  <tr key={u.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }} onClick={() => { setSelectedUser(u); setProfileReadOnly(true); setProfileModalOpen(true); }}>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{u.username}</td>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{u.role}</td>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{u.profile?.teacher_code ?? '-'}</td>
@@ -131,13 +142,19 @@ const UserManagement = () => {
 
           <TeacherProfileModal
             isOpen={profileModalOpen}
-            onClose={() => { setProfileModalOpen(false); setSelectedUser(null); }}
+            readOnly={profileReadOnly}
+            onClose={() => { setProfileModalOpen(false); setSelectedUser(null); setProfileReadOnly(false); }}
             user={selectedUser}
-            onSaved={(result) => {
-              // refresh list and close modal
-              setProfileModalOpen(false);
-              setSelectedUser(null);
-              if (fetchRef.current) fetchRef.current();
+            onSaved={() => {
+              try {
+                // refresh list and close modal
+                setProfileModalOpen(false);
+                setSelectedUser(null);
+                setProfileReadOnly(false);
+                if (fetchRef.current) fetchRef.current();
+              } catch (err) {
+                console.error('onSaved handler error', err);
+              }
             }}
           />
       </div>
