@@ -5,21 +5,42 @@
 /* 1. Global Reset */
 html, body, #root {
   height: 100%;
-  overflow: hidden;
+}
+
+/* Theme tokens */
+:root {
+  --bg-0: #05070d;
+  --bg-1: #0b1220;
+  --bg-2: #111827;
+  --glass-bg: rgba(255,255,255,0.04);
+  --glass-border: rgba(255,255,255,0.08);
+  --text-strong: #f8fafc;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #4dd9ff;
+  --accent-2: #7c3aed;
+  --shadow: 0 12px 28px rgba(2,6,23,0.6);
+  --radius: 16px;
+  --blur: 10px;
 }
 
 body {
   margin: 0;
-  background-color: #0f172a; /* Your new dark theme color */
-  color: #f1f5f9; /* slate-100 */
+  color: var(--text);
+  background: radial-gradient(1200px 600px at 20% -10%, rgba(77,217,255,0.12), transparent 55%),
+              radial-gradient(900px 520px at 90% 10%, rgba(124,58,237,0.10), transparent 60%),
+              linear-gradient(180deg, var(--bg-0), var(--bg-1) 45%, var(--bg-2) 100%);
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 /* 2. Base Typography */
 h1, h2, h3, h4 {
-  color: #ffffff;
-  font-family: system-ui, -apple-system, sans-serif;
+  color: var(--text-strong);
+  font-family: "Space Grotesk", ui-sans-serif, system-ui, sans-serif;
+  letter-spacing: 0.01em;
 }
 
 /* 3. Smooth Transitions */
@@ -31,13 +52,8 @@ h1, h2, h3, h4 {
 ::-webkit-scrollbar {
   width: 8px;
 }
-::-webkit-scrollbar-track {
-  background: #0f172a;
-}
-::-webkit-scrollbar-thumb {
-  background: #1e293b;
-  border-radius: 10px;
-}
+::-webkit-scrollbar-track { background: var(--bg-1); }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 10px; }
 
 /* Hero shared styles (moved from src/sections/hero.css) */
 .hero-section {
@@ -80,78 +96,35 @@ h1, h2, h3, h4 {
 }
 
 .btn {
-  /* From Uiverse.io by SujitAdroja — gradient border and fill (top→bottom) */
-  color: #2B59C3; /* start color for text when idle */
+  color: var(--text-strong);
   text-transform: uppercase;
   text-decoration: none;
-  padding: 10px 20px;
-  font-size: 17px;
+  padding: 0.65rem 1.15rem;
+  font-size: 0.95rem;
   cursor: pointer;
-  font-weight: bold;
-  background: transparent;
-  position: relative;
-  transition: all 1s;
-  overflow: hidden;
-  border: 2px solid transparent;
-  /* gradient border using double background trick */
-  background-image: linear-gradient(#0f172a, #0f172a), linear-gradient(to bottom, #2B59C3, #673AB7, #A336F1);
-  background-origin: padding-box, border-box;
-  background-clip: padding-box, border-box;
-  z-index: 0; /* ensure stacking context; pseudo-element will sit behind with -1 */
-  border-radius: 1rem;
+  font-weight: 700;
+  background: linear-gradient(180deg, rgba(77,217,255,0.12), rgba(77,217,255,0.02));
+  border: 1px solid rgba(77,217,255,0.35);
+  border-radius: 999px;
+  box-shadow: 0 8px 22px rgba(77,217,255,0.12);
+  transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease, color 180ms ease;
 }
 
 .btn:hover {
-  color: #ffffff !important;
-  /* keep background clear so the diagonal ::before sweep is visible */
-  border-color: transparent;
-  box-shadow: 0 8px 24px rgba(163,54,241,0.12);
+  color: #ffffff;
+  border-color: rgba(77,217,255,0.65);
+  box-shadow: 0 12px 28px rgba(77,217,255,0.18);
+  transform: translateY(-1px);
 }
 
-.btn::before {
-  content: "";
-  position: absolute;
-  height: 100%;
-  width: 0%;
-  top: 0;
-  left: -40px;
-  transform: skewX(45deg);
-  /* animated fill uses the same vertical gradient */
-  background: linear-gradient(to bottom, #2B59C3, #673AB7, #A336F1);
-  z-index: -1;
-  pointer-events: none;
-  transition: all .5s;
-}
-
-.btn:hover::before {
-  width: 160%;
-}
-
-/* Click / active effect: The "Tactile Press" */
 .btn:active {
-  /* Subtle downward movement + slight shrink makes it feel "pressed" */
-  transform: translateY(2px) scale(0.96);
-  /* Reduce shadow to simulate the button getting closer to the surface */
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3), inset 0 2px 4px rgba(0, 0, 0, 0.2);
-  /* Slightly darken to show interaction */
-  filter: brightness(0.9);
+  transform: translateY(1px) scale(0.98);
+  box-shadow: 0 6px 16px rgba(2,6,23,0.5);
 }
 
-/* The Shine/Glow expand on click */
-.btn:active::before {
-  width: 150%; /* Wider expansion for a "burst" feel */
-  left: -25%;
-  opacity: 0.4;
-  transition: width 0.5s ease-out;
-}
-
-/* Keyboard focus: Modern "Halo" effect */
 .btn:focus-visible {
-  /* Change the color to match your Blue/Purple theme */
-  outline: 3px solid rgba(59, 130, 246, 0.5); 
-  outline-offset: 4px;
-  /* Keep it steady when focused */
-  transform: scale(.98);
+  outline: 2px solid rgba(77,217,255,0.6);
+  outline-offset: 3px;
 }
 
 /* Responsive sizes */

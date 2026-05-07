@@ -8,7 +8,7 @@
   height: var(--navbar-height);
   z-index: 60;
   width: 100%;
-  background: transparent;
+  background: linear-gradient(180deg, rgba(5,7,13,0.85), rgba(5,7,13,0));
   box-sizing: border-box;
 }
 
@@ -29,7 +29,7 @@
   display: flex;
   align-items: center;
   gap: 0rem;
-  padding-top: 1rem;
+  padding-top: 0.8rem;
   padding-left: 1rem;
 }
 
@@ -42,11 +42,11 @@
 }
 
 .navbar-text {
-  margin-left: -3rem;
-  font-size: 1.5rem; /* text-2xl */
-  font-weight: 900; /* font-black */
+  margin-left: -2.6rem;
+  font-size: 1.4rem; /* text-2xl */
+  font-weight: 800; /* font-black */
   letter-spacing: -0.025em; /* tighter tracking */
-  color: #ffffff;
+  color: var(--text-strong);
   text-transform: uppercase;
   line-height: 1;
 }

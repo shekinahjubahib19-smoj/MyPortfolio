@@ -1,5 +1,26 @@
 /* Styles specific to the Set Up Profile page */
-.setup-root { }
+.setup-root {
+  padding: 2.25rem 1rem;
+}
+
+.setup-header h1 {
+  margin: 0 0 0.25rem 0;
+  font-size: 1.6rem;
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.setup-sub {
+  margin: 0;
+  color: rgba(255,255,255,0.72);
+  font-size: 0.95rem;
+}
+
+.setup-list {
+  padding-top: 0.5rem;
+}
+
+.setup-actions { display:flex; justify-content:center; gap:0.75rem; margin-top:1rem }
 
 .setup-input {
   width: 100%;
@@ -50,6 +71,184 @@
   max-height: 220px;
   overflow-y: auto;
   border-radius: 6px;
+}
+
+/* Slight visual polish */
+.setup-table-container { box-shadow: 0 6px 18px rgba(2,6,23,0.6); }
+.setup-search .setup-input { padding: 0.65rem 0.9rem; }
+
+.setup-section label { display:block; margin-bottom:0.45rem; color: rgba(255,255,255,0.85); }
+.setup-section { margin-bottom: 1rem; }
+
+/* Buttons in this page follow .btn styles but we make them sit slightly larger */
+.btn { padding: 0.8rem 1.2rem; border-radius: 1rem; }
+
+/* Save result modal */
+.setup-result-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 120;
+  padding: 1rem;
+}
+
+.setup-result-modal {
+  width: 420px;
+  max-width: calc(100% - 2rem);
+  background: rgba(8,12,20,0.92);
+  color: #ffffff;
+  border-radius: 0.75rem;
+  padding: 1.5rem 1.25rem;
+  box-shadow: 0 16px 40px rgba(2,6,23,0.65);
+  text-align: center;
+  backdrop-filter: blur(8px);
+}
+
+.setup-result-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: 999px;
+  margin: 0 auto 0.75rem auto;
+}
+
+.setup-result-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.2rem;
+}
+
+.setup-result-message {
+  margin: 0 0 1.25rem 0;
+  color: rgba(255,255,255,0.85);
+  line-height: 1.4;
+}
+
+.setup-result-message.success { color: #47d147; }
+.setup-result-message.error { color: #ff4d4d; }
+
+.setup-result-actions { display: flex; justify-content: center; }
+
+/* Preview tables (blur background, no borders) */
+.setup-preview .setup-preview-card {
+  width: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  padding: 0.5rem;
+}
+
+.setup-preview-table,
+.setup-preview-subjects-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #e6eef8;
+  border: none;
+}
+
+.setup-preview-table td {
+  padding: 0.75rem 1rem;
+  color: #ffffff;
+}
+.setup-preview-table td:first-child { color: rgba(255,255,255,0.85); font-weight: 600; width: 40%; }
+
+.setup-preview-subjects-table thead th {
+  text-align: left;
+  padding: 0.45rem 1rem;
+  color: #cbd5e1;
+  font-weight: 700;
+  background: transparent;
+}
+.setup-preview-subjects-table tbody td {
+  padding: 0.35rem 1rem;
+  color: #e6eef8;
+  line-height: 1.15;
+  font-size: 0.95rem;
+}
+.setup-preview-subjects-table tbody tr { border-bottom: none; }
+
+/* Scrollable container for preview subjects with fixed height */
+.setup-preview-subjects-container {
+  border-radius: 6px;
+}
+
+/* Make the subtitle row sticky at the top, and keep the column header row sticky below it */
+.setup-preview-subjects-container .setup-preview-subjects-table thead .setup-preview-subtitle-row th {
+  position: sticky;
+  top: 0;
+  background: rgba(255,255,255,0.03);
+  z-index: 7;
+  padding: 0.6rem 1rem;
+}
+
+.setup-preview-subjects-container .setup-preview-subjects-table thead tr:nth-child(2) th {
+  position: sticky;
+  top: 40px; /* height of subtitle row */
+  background: rgba(255,255,255,0.02);
+  z-index: 6;
+  padding: 0.45rem 1rem;
+}
+
+/* Make tbody scroll when more than ~6 rows */
+.setup-preview-subjects-table thead,
+.setup-preview-subjects-table tbody tr {
+  display: table;
+  width: 100%;
+  table-layout: fixed;
+}
+
+.setup-preview-subjects-table tbody {
+  display: block;
+  max-height: 168px; /* ~6 rows with current padding/line-height */
+  overflow-y: auto;
+}
+
+/* remove default table borders/lines */
+.setup-preview-table td, .setup-preview-subjects-table td, .setup-preview-subjects-table th { border: none; }
+
+@media (max-width: 880px) {
+  .setup-preview-table td, .setup-preview-subjects-table td { padding: 0.5rem; }
+}
+
+/* Summary table styling (top row with three columns) */
+.setup-preview-summary-table {
+  width: 100%;
+  border-collapse: collapse;
+  background: rgba(255,255,255,0.02);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  color: #e6eef8;
+}
+.setup-preview-summary-table thead th {
+  text-align: center;
+  padding: 0.65rem 1rem;
+  color: #cbd5e1;
+  font-weight: 700;
+}
+.setup-preview-summary-table tbody td {
+  text-align: center;
+  padding: 0.5rem;
+  color: #ffffff;
+}
+.setup-preview-subtitle {
+  text-align: center;
+  margin: 0.75rem 0 0.5rem 0;
+  color: rgba(255,255,255,0.85);
+}
+
+/* Subtitle row placed inside the subjects table thead */
+.setup-preview-subjects-table thead .setup-preview-subtitle-row th {
+  text-align: center;
+  padding: .5rem;
+  color: rgba(255,255,255,0.95);
+  font-weight: 700;
+  background: transparent;
 }
 
 /* Step indicator */

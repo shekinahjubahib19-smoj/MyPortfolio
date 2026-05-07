@@ -1,11 +1,10 @@
 import React, { useEffect, useState, useRef } from 'react';
-import '../assets/css/subject-list.css';
 import '../assets/css/set-up-profile.css';
 import { useAuth } from '../context/AuthContext';
 import { fetchSubjects, fetchUserProfile, saveTeacherProfile } from '../assets/js/set-up-profile';
-
+import SetupProfileResult from '../assets/modals/setup-profile-result';
 const SetUpProfile = () => {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [teacherCode, setTeacherCode] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -16,6 +15,10 @@ const SetUpProfile = () => {
   const [message, setMessage] = useState('');
   const [working, setWorking] = useState(false);
   const [step, setStep] = useState(1); // 1: inputs, 2: subjects, 3: preview
+  const [resultOpen, setResultOpen] = useState(false);
+  const [resultError, setResultError] = useState(false);
+  const [resultMessage, setResultMessage] = useState('');
+  const [resultRedirect, setResultRedirect] = useState(false);
   const didLoad = useRef(false);
 
   useEffect(() => {
@@ -51,7 +54,6 @@ const SetUpProfile = () => {
 
   const clearInputs = () => {
     setTeacherCode('');
-    setFirstName('');
     setLastName('');
     setMaxHours(8);
     setSelectedSubjects([]);
@@ -113,37 +115,68 @@ const SetUpProfile = () => {
       };
       const json = await saveTeacherProfile(payload);
       if (json && json.success) {
-        setMessage('Profile saved. Redirecting...');
-        try {
-          const raw = window.localStorage.getItem('mock_auth_user');
-          if (raw) {
-            const obj = JSON.parse(raw);
-            obj.is_profile_complete = true;
-            window.localStorage.setItem('mock_auth_user', JSON.stringify(obj));
-          }
-        } catch (err) { console.warn('localStorage update failed', err); }
-        setTimeout(() => { window.location.hash = '#/dashboard'; }, 700);
+        setResultError(false);
+        setResultMessage('Saved successfully. Only admins can view or update profile details.');
+        setResultRedirect(true);
+        setResultOpen(true);
       } else {
-        setMessage(json.message || 'Save failed');
+        setResultError(true);
+        setResultMessage(json?.message || 'Failed to save. Please try again.');
+        setResultRedirect(false);
+        setResultOpen(true);
       }
     } catch (err) {
       console.error(err);
-      setMessage('Failed to save');
+      setResultError(true);
+      setResultMessage('Failed to save. Please try again.');
+      setResultRedirect(false);
+      setResultOpen(true);
     } finally {
       setWorking(false);
     }
   };
 
+  const handleResultOk = () => {
+    const shouldRedirect = resultRedirect && !resultError;
+    setResultOpen(false);
+    if (shouldRedirect) {
+      try {
+        const raw = window.localStorage.getItem('mock_auth_user');
+        if (raw) {
+          const obj = JSON.parse(raw);
+          obj.is_profile_complete = true;
+          window.localStorage.setItem('mock_auth_user', JSON.stringify(obj));
+        }
+      } catch (err) {
+        console.warn('localStorage update failed', err);
+      }
+
+      if (typeof updateUser === 'function') {
+        updateUser({ is_profile_complete: true });
+      }
+
+      setTimeout(() => {
+        window.location.hash = '#/dashboard';
+      }, 0);
+    }
+  };
+
   return (
-    <div className="um-root">
-      <header className="um-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="setup-root">
+      <SetupProfileResult
+        isOpen={resultOpen}
+        isError={resultError}
+        message={resultMessage}
+        onOk={handleResultOk}
+      />
+      <header className="setup-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
           <h1>Set Up Profile</h1>
-          <p className="um-sub">Complete your teacher profile before using the system</p>
+          <p className="setup-sub">Complete your teacher profile before using the system</p>
         </div>
       </header>
 
-      <div className="um-list">
+      <div className="setup-list">
         <div style={{ padding: '0 0rem', maxWidth: 1100, margin: '0 auto' }}>
           <div style={{ display: 'flex', flexDirection: 'column', minHeight: 520 }}>
             <div className="setup-steps">
@@ -245,21 +278,48 @@ const SetUpProfile = () => {
 
                 {step === 3 && (
                   <div>
-                    <h3 style={{ textAlign: 'center' }}>Preview</h3>
-                    <div style={{ display: 'flex', gap: 12 }}>
-                      <div style={{ flex: 1 }}>
-                        <p><strong>Teacher Code:</strong> {teacherCode}</p>
-                        <p><strong>First name:</strong> {firstName}</p>
-                        <p><strong>Last name:</strong> {lastName}</p>
-                        <p><strong>Max hours/day:</strong> {maxHours}</p>
-                      </div>
-                      <div style={{ flex: 1 }}>
-                        <p><strong>Qualified subjects:</strong></p>
-                        <ul>
-                          {availableSubjects.filter(s => selectedSubjects.includes(s.id)).map(s => (
-                            <li key={s.id}>{(s.code || s.name)} — {s.name} ({s.hours ?? s.default_hours ?? ''})</li>
-                          ))}
-                        </ul>
+                    <div className="setup-preview" style={{ marginTop: -5 }}>
+                      <div className="setup-preview-card">
+                        <table className="setup-preview-summary-table">
+                          <thead>
+                            <tr>
+                              <th>Teacher Code</th>
+                              <th>Full Name</th>
+                              <th>Hours Available</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td>{teacherCode}</td>
+                              <td>{(firstName || '') + (lastName ? ' ' + lastName : '')}</td>
+                              <td>{maxHours ? `${maxHours} hours` : ''}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+
+                        <div className="setup-preview-subjects-container" style={{ marginTop: 12 }}>
+                          <table className="setup-preview-subjects-table">
+                            <thead>
+                              <tr className="setup-preview-subtitle-row">
+                                <th colSpan={3}>Qualified Subject/s</th>
+                              </tr>
+                              <tr>
+                                <th>Subject Code</th>
+                                <th>Subject Name</th>
+                                <th>Duration</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {availableSubjects.filter(s => selectedSubjects.includes(s.id)).map(s => (
+                                <tr key={s.id}>
+                                  <td>{s.code || s.name}</td>
+                                  <td>{s.name}</td>
+                                  <td>{(s.hours ?? s.default_hours ?? '') ? `${s.hours ?? s.default_hours ?? ''} hour` : ''}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       </div>
                     </div>
                   </div>

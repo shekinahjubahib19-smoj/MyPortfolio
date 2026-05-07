@@ -57,7 +57,7 @@
 }
 
 .landing-hero-pane .hero-title {
-  font-size: clamp(2rem, 2.6vw, 2.3rem);
+  font-size: clamp(2rem, 2.6vw, 2.4rem);
   line-height: 1.05;
 }
 
@@ -84,7 +84,7 @@
 
 .landing-login-pane .login-root {
   width: 100%;
-  max-width: 360px;
+  max-width: 380px;
   box-sizing: border-box;
   transform: translateY(8px);
   transition: transform 260ms ease, opacity 260ms ease;
@@ -150,8 +150,8 @@
 
 /* App layout when user is logged in: content sits to the right of the fixed sidebar */
 .app-root {
-  margin-left: 220px; /* matches .sidebar-root width */
-  width: calc(100% - 220px);
+  margin-left: 230px; /* matches .sidebar-root width */
+  width: calc(100% - 230px);
   min-height: 100vh;
   background: transparent; /* don't cover the whole page with a bg */
   padding: 1.25rem; /* page padding inside the content area */
