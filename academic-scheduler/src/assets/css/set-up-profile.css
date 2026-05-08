@@ -142,7 +142,8 @@
   width: 100%;
   border-radius: 10px;
   overflow: hidden;
-  padding: 0.5rem;
+  padding: 1rem; /* increase padding to give equal side spacing in modal */
+  box-sizing: border-box;
 }
 
 .setup-preview-table,
@@ -156,30 +157,44 @@
   border: none;
 }
 
+/* Use a consistent fixed column layout so both summary and subjects align vertically */
+.setup-preview-table,
+.setup-preview-subjects-table {
+  table-layout: fixed;
+}
+
 .setup-preview-table td {
   padding: 0.75rem 1rem;
   color: #ffffff;
+  white-space: nowrap; /* single-line only */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .setup-preview-table td:first-child { color: rgba(255,255,255,0.85); font-weight: 600; width: 40%; }
 
 .setup-preview-subjects-table thead th {
-  text-align: left;
-  padding: 0.45rem 1rem;
+  text-align: center; /* match summary table header alignment */
+  padding: 0.65rem 1rem; /* match summary table header padding */
   color: #cbd5e1;
   font-weight: 700;
   background: transparent;
 }
 .setup-preview-subjects-table tbody td {
-  padding: 0.35rem 1rem;
+  padding: 0.4rem 1rem; /* tighter row spacing for subjects */
+  text-align: center; /* match summary table body alignment */
   color: #e6eef8;
   line-height: 1.15;
   font-size: 0.95rem;
+  white-space: nowrap; /* prevent stacked words */
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .setup-preview-subjects-table tbody tr { border-bottom: none; }
 
 /* Scrollable container for preview subjects with fixed height */
 .setup-preview-subjects-container {
   border-radius: 6px;
+  padding: 0; /* remove extra horizontal padding so table aligns with summary */
 }
 
 /* Make the subtitle row sticky at the top, and keep the column header row sticky below it */
@@ -240,6 +255,22 @@
   padding: 0.5rem;
   color: #ffffff;
 }
+.setup-preview-summary-table thead th:nth-child(1),
+.setup-preview-summary-table tbody td:first-child { width: 28%; }
+.setup-preview-summary-table thead th:nth-child(2),
+.setup-preview-summary-table tbody td:nth-child(2) { width: 44%; }
+.setup-preview-summary-table thead th:nth-child(3),
+.setup-preview-summary-table tbody td:nth-child(3) { width: 28%; }
+.setup-preview-summary-table tbody td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* Match subjects table column widths to the summary table so they align vertically */
+.setup-preview-subjects-table thead th:nth-child(1),
+.setup-preview-subjects-table tbody td:nth-child(1) { width: 28%; }
+.setup-preview-subjects-table thead th:nth-child(2),
+.setup-preview-subjects-table tbody td:nth-child(2) { width: 44%; }
+.setup-preview-subjects-table thead th:nth-child(3),
+.setup-preview-subjects-table tbody td:nth-child(3) { width: 28%; }
+.setup-preview-subjects-table thead th, .setup-preview-subjects-table tbody td { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .setup-preview-subtitle {
   text-align: center;
   margin: 0.75rem 0 0.5rem 0;

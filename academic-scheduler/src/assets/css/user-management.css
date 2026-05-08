@@ -58,7 +58,7 @@
 /* Keep table header visible while tbody scrolls */
 .um-table {
   width: 100%;
-  table-layout: fixed; /* ensure predictable equal column widths */
+  table-layout: auto; /* allow columns to size naturally for single-line content */
 }
 
 .um-table thead th {
@@ -71,11 +71,12 @@
 
 .um-table th,
 .um-table td {
-  width: 50%;
+  /* let the browser decide column widths; prevent wrapping and clip overflow */
   text-align: left;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  word-break: normal; /* avoid mid-word breaks */
 }
 
 /* Hover effect for tbody rows: subtle blur + lift */

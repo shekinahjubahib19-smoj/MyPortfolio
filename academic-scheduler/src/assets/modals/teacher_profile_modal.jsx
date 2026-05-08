@@ -2,28 +2,38 @@ import React, { useState, useEffect } from 'react';
 import '../css/registration.css';
 
 const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false }) => {
-  const [teacherCode, setTeacherCode] = useState('');
-  const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName] = useState('');
-  const [maxHours, setMaxHours] = useState(8);
-  const [subjects, setSubjects] = useState([]);
+  const [form, setForm] = useState(() => {
+    const p = user?.profile || null;
+    return {
+      teacherCode: String(p?.teacher_code ?? ''),
+      firstName: p?.first_name || '',
+      lastName: p?.last_name || '',
+      maxHours: p?.max_hours_per_day ?? 8,
+      subjects: (p?.subjects || []).map(s => Number(s.id)),
+    };
+  });
   const [availableSubjects, setAvailableSubjects] = useState([]);
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState('');
 
   useEffect(() => {
     if (!isOpen) return;
-    const p = user?.profile || null;
-    setTeacherCode(p?.teacher_code || '');
-    setFirstName(p?.first_name || '');
-    setLastName(p?.last_name || '');
-    setMaxHours(p?.max_hours_per_day ?? 8);
-    setSubjects((p?.subjects || []).map(s => s.id));
-
     // load available subjects
     fetch('http://localhost/Portfolio/academic-scheduler/backend/api/list_subjects.php')
       .then(r => r.json())
-      .then(j => { if (j.success) setAvailableSubjects(j.subjects || []); })
+      .then(j => {
+        if (j.success) {
+          // ensure subject ids are numbers and normalize keys used by the component
+          const subs = (j.subjects || []).map(s => ({
+            ...s,
+            id: Number(s.id),
+            name: s.name ?? s.subject_name ?? s.subjectName,
+            code: s.code ?? s.subject_code ?? s.subjectCode,
+            hours: s.hours ?? s.default_hours,
+          }));
+          setAvailableSubjects(subs);
+        }
+      })
       .catch(() => {});
   }, [isOpen, user]);
 
@@ -33,7 +43,10 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
 
   const toggleSubject = (id) => {
     if (readOnly) return;
-    setSubjects(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
+    setForm(prev => {
+      const has = prev.subjects.includes(id);
+      return { ...prev, subjects: has ? prev.subjects.filter(x => x !== id) : [...prev.subjects, id] };
+    });
   };
 
   const handleSave = async () => {
@@ -42,11 +55,11 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
     try {
       const payload = {
         user_id: user.id,
-        teacher_code: teacherCode,
-        first_name: firstName,
-        last_name: lastName,
-        max_hours_per_day: Number(maxHours) || 0,
-        subjects: subjects,
+        teacher_code: form.teacherCode,
+        first_name: form.firstName,
+        last_name: form.lastName,
+        max_hours_per_day: Number(form.maxHours) || 0,
+        subjects: form.subjects,
       };
       const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/update_teacher_profile.php', {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
@@ -69,7 +82,7 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
     // render a read-only preview similar to setup preview
     return (
       <div className="registration-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-        <div className="registration-modal" onClick={stop} style={{ maxWidth: 720 }}>
+        <div className="registration-modal" onClick={stop} style={{ width: 'min(90vw, 760px)' }}>
           <button className="registration-close" onClick={onClose} aria-label="Close">×</button>
           <h3 style={{ marginTop: 0, textAlign: 'center' }}>Profile Preview</h3>
           <div className="setup-preview" style={{ marginTop: -5 }}>
@@ -84,9 +97,9 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
                 </thead>
                 <tbody>
                   <tr>
-                    <td>{teacherCode || '-'}</td>
-                    <td>{(firstName || '') + (lastName ? ' ' + lastName : '')}</td>
-                    <td>{maxHours ? `${maxHours} hours` : '-'}</td>
+                    <td>{form.teacherCode || '-'}</td>
+                    <td>{(form.firstName || '') + (form.lastName ? ' ' + form.lastName : '')}</td>
+                    <td>{form.maxHours ? `${form.maxHours} hours` : '-'}</td>
                   </tr>
                 </tbody>
               </table>
@@ -94,9 +107,6 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
               <div className="setup-preview-subjects-container" style={{ marginTop: 12 }}>
                 <table className="setup-preview-subjects-table">
                   <thead>
-                    <tr className="setup-preview-subtitle-row">
-                      <th colSpan={3}>Qualified Subject/s</th>
-                    </tr>
                     <tr>
                       <th>Subject Code</th>
                       <th>Subject Name</th>
@@ -104,14 +114,14 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
                     </tr>
                   </thead>
                   <tbody>
-                    {(availableSubjects || []).filter(s => subjects.includes(s.id)).map(s => (
+                    {(availableSubjects || []).filter(s => form.subjects.includes(s.id)).map(s => (
                       <tr key={s.id}>
                         <td>{s.code || s.name}</td>
                         <td>{s.name}</td>
                         <td>{(s.hours ?? s.default_hours ?? '') ? `${s.hours ?? s.default_hours ?? ''} hour` : ''}</td>
                       </tr>
                     ))}
-                    {((availableSubjects || []).filter(s => subjects.includes(s.id)).length === 0) && (
+                    {((availableSubjects || []).filter(s => form.subjects.includes(s.id)).length === 0) && (
                       <tr>
                         <td colSpan={3} style={{ opacity: 0.7, textAlign: 'center' }}>No subjects selected</td>
                       </tr>
@@ -132,24 +142,24 @@ const TeacherProfileModal = ({ isOpen, onClose, user, onSaved, readOnly = false 
 
   return (
     <div className="registration-overlay" role="dialog" aria-modal="true" onClick={onClose}>
-      <div className="registration-modal" onClick={stop} style={{ maxWidth: 600 }}>
+    <div className="registration-modal" onClick={stop} style={{ width: 'min(90vw, 620px)' }}>
         <button className="registration-close" onClick={onClose} aria-label="Close">×</button>
         <h3 style={{ marginTop: 0, textAlign: 'center' }}>Teacher Profile</h3>
         <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
           <label>Teacher Code</label>
-          <input className="input-field" value={teacherCode} onChange={(e) => setTeacherCode(e.target.value)} />
+          <input className="input-field" value={form.teacherCode} onChange={(e) => setForm(f => ({ ...f, teacherCode: e.target.value }))} />
           <label>First name</label>
-          <input className="input-field" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+          <input className="input-field" value={form.firstName} onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))} />
           <label>Last name</label>
-          <input className="input-field" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+          <input className="input-field" value={form.lastName} onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))} />
           <label>Max hours per day</label>
-          <input type="number" className="input-field" value={maxHours} onChange={(e) => setMaxHours(e.target.value)} />
+          <input type="number" className="input-field" value={form.maxHours} onChange={(e) => setForm(f => ({ ...f, maxHours: Number(e.target.value) }))} />
 
           <label>Qualified subjects</label>
           <div style={{ maxHeight: 160, overflowY: 'auto', border: '1px solid rgba(255,255,255,0.04)', padding: '0.5rem' }}>
             {availableSubjects.map(s => (
               <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <input type="checkbox" checked={subjects.includes(s.id)} onChange={() => toggleSubject(s.id)} />
+                <input type="checkbox" checked={form.subjects.includes(s.id)} onChange={() => toggleSubject(s.id)} />
                 <span>{s.code || s.name} — {s.name}</span>
               </div>
             ))}

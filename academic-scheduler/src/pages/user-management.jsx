@@ -141,6 +141,7 @@ const UserManagement = () => {
         </div>
 
           <TeacherProfileModal
+            key={selectedUser?.id ?? 'no-user'}
             isOpen={profileModalOpen}
             readOnly={profileReadOnly}
             onClose={() => { setProfileModalOpen(false); setSelectedUser(null); setProfileReadOnly(false); }}
