@@ -50,6 +50,8 @@ function AppInner() {
     handleClose,
   } = useLandingState();
 
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(false);
+
   const [route, setRoute] = React.useState(() => {
     try {
       return (window.location.hash || '').replace('#/', '');
@@ -110,17 +112,12 @@ function AppInner() {
     }
   }, [user, route]);
 
-  const [showChangePass, setShowChangePass] = React.useState(false);
-
-  React.useEffect(() => {
-    setShowChangePass(!!user?.must_change_password);
-  }, [user]);
+  const showChangePass = !!user?.must_change_password;
 
   const handlePasswordChanged = () => {
     if (typeof updateUser === 'function') {
       updateUser({ must_change_password: false });
     }
-    setShowChangePass(false);
   };
 
   return (
@@ -129,7 +126,10 @@ function AppInner() {
       className="landing-root relative min-h-screen w-full overflow-hidden bg-black"
     >
       <Navbar />
-      <Sidebar />
+      <Sidebar
+        collapsed={isSidebarCollapsed}
+        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+      />
 
       {/* Background layers (always present) */}
       <div 
@@ -157,7 +157,7 @@ function AppInner() {
 
       {/* If logged in show Dashboard, otherwise show landing split */}
       {user ? (
-        <div className="app-root relative z-20">
+        <div className={`app-root relative z-20 ${isSidebarCollapsed ? 'is-collapsed' : ''}`}>
           <ChangePassModal
             isOpen={showChangePass}
             user={user}

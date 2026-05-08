@@ -1,16 +1,8 @@
 import React from 'react';
 import '../assets/css/navbar.css';
-import logo from '../assets/img/logo.png';
 
 const Navbar = () => {
-  return (
-    <div className="navbar-root">
-      <div className="logo-container">
-        <img src={logo} alt="Academic Sched logo" className="navbar-logo" />
-        <span className="navbar-text">Sched</span>
-      </div>
-    </div>
-  );
+  return <div className="navbar-root" aria-hidden="true" />;
 };
 
 export default Navbar;

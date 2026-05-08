@@ -161,6 +161,11 @@
   background: transparent; /* don't cover the whole page with a bg */
   padding: 1.25rem; /* page padding inside the content area */
   box-sizing: border-box;
+  transition: margin-left 200ms ease, width 200ms ease;
+}
+.app-root.is-collapsed {
+  margin-left: 72px;
+  width: calc(100% - 72px);
 }
 
 @media (max-width: 900px) {
