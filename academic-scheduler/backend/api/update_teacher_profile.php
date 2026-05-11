@@ -58,6 +58,10 @@ try {
         $ins->close();
     }
 
+    // mark the user as having completed profile
+    $uup = $conn->prepare("UPDATE users SET is_profile_complete = 1 WHERE id = ?");
+    if ($uup) { $uup->bind_param('i', $user_id); $uup->execute(); $uup->close(); }
+
     // update teacher_subjects: replace existing with provided list
     $del = $conn->prepare("DELETE FROM teacher_subjects WHERE teacher_profile_id = ?");
     if ($del) { $del->bind_param('i', $profile_id); $del->execute(); $del->close(); }

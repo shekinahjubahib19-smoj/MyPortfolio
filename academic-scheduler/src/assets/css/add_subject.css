@@ -37,6 +37,23 @@
   background: rgba(255,255,255,0.02);
   color: #fff;
 }
+
+/* Style native select to match other modals (registration/user modal) */
+.add-subject-modal select.input-field {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  background-color: rgba(255,255,255,0.02);
+  color: #fff;
+  padding-right: 2.25rem;
+  position: relative;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='8' viewBox='0 0 14 8'%3E%3Cpath fill='%23FFFFFF' fill-opacity='0.9' d='M7 8L0 0h14z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: calc(100% - 12px) center;
+  background-size: 14px 8px;
+}
+.add-subject-modal select.input-field::-ms-expand { display: none; }
+.add-subject-modal select.input-field option { background: #0b1220; color: #fff; }
 .add-subject-modal .btn.primary {
   background: rgba(99,102,241,0.95);
   color: #fff;

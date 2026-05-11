@@ -19,7 +19,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 try {
     include __DIR__ . '/../config/db.php';
 
-    $res = $conn->query("SELECT id, subject_name, subject_code, default_hours, created_at FROM subjects ORDER BY id DESC LIMIT 500");
+    $res = $conn->query("SELECT id, subject_name, subject_code, default_hours, level, created_at FROM subjects ORDER BY id DESC LIMIT 500");
     $rows = [];
     while ($r = $res->fetch_assoc()) {
         // Map DB columns to normalized keys and generate code if missing
@@ -29,6 +29,7 @@ try {
         $r['name'] = $name;
         $r['hours'] = $hours;
         $r['code'] = $r['subject_code'] ?? null;
+        $r['level'] = $r['level'] ?? '';
         
         // Generate human-readable code like ESL-101 if absent
         // Create acronym from up to 3 words

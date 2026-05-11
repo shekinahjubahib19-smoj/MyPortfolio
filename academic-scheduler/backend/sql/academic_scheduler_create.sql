@@ -86,4 +86,45 @@ ALTER TABLE subjects ADD UNIQUE KEY IF NOT EXISTS ux_subject_code (subject_code(
 ALTER TABLE teacher_profiles ADD UNIQUE KEY IF NOT EXISTS ux_teacher_user (user_id);
 ALTER TABLE teacher_profiles ADD UNIQUE KEY IF NOT EXISTS ux_teacher_code (teacher_code(20));
 
+
+-- Migration: Create weekly_schedules table
+-- Purpose: To handle specific time-slots and days for the Master Scheduler.
+
+CREATE TABLE IF NOT EXISTS weekly_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teacher_profile_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    room_name VARCHAR(50) DEFAULT 'TBA',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ws_teacher FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ws_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+ALTER TABLE weekly_schedules 
+ADD COLUMN student_name VARCHAR(100) AFTER subject_id,
+ADD COLUMN level VARCHAR(20) AFTER student_name;
+
+CREATE TABLE IF NOT EXISTS students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_code VARCHAR(20) UNIQUE NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    current_level VARCHAR(20), -- e.g., 'Level 1', 'Grade 7'
+    enrollment_status ENUM('Active', 'Graduated', 'Inactive') DEFAULT 'Active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+ALTER TABLE weekly_schedules 
+ADD COLUMN student_id INT AFTER subject_id,
+ADD CONSTRAINT fk_ws_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE;
+
+-- If you already added student_name, you can drop it:
+ALTER TABLE weekly_schedules DROP COLUMN student_name;
+
+ALTER TABLE subjects 
+ADD COLUMN level VARCHAR(50) AFTER subject_code;
+
 -- End of script

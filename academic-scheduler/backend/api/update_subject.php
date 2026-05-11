@@ -26,6 +26,7 @@ try {
     $id = isset($data->id) ? intval($data->id) : 0;
     $subject_name = trim($data->name ?? '');
     $hours = isset($data->hours) ? (float)$data->hours : null;
+    $level = array_key_exists('level', (array)$data) ? trim($data->level) : null;
 
     if ($id <= 0) {
         echo json_encode(['success' => false, 'message' => 'Invalid subject id']);
@@ -38,6 +39,7 @@ try {
     $values = [];
     if ($subject_name !== '') { $fields[] = 'subject_name = ?'; $types .= 's'; $values[] = $subject_name; }
     if (!is_null($hours)) { $fields[] = 'default_hours = ?'; $types .= 'd'; $values[] = $hours; }
+    if (!is_null($level)) { $fields[] = 'level = ?'; $types .= 's'; $values[] = $level; }
 
     if (count($fields) === 0) {
         echo json_encode(['success' => false, 'message' => 'No fields to update']);
@@ -72,12 +74,13 @@ try {
     }
 
     // Return updated row
-    $res = $conn->query("SELECT id, subject_name, subject_code, default_hours, created_at FROM subjects WHERE id = " . intval($id) . " LIMIT 1");
+    $res = $conn->query("SELECT id, subject_name, subject_code, default_hours, level, created_at FROM subjects WHERE id = " . intval($id) . " LIMIT 1");
     $subject = $res ? $res->fetch_assoc() : null;
     if ($subject) {
         $subject['name'] = $subject['subject_name'];
         $subject['hours'] = $subject['default_hours'];
         $subject['code'] = $subject['subject_code'];
+        $subject['level'] = $subject['level'] ?? '';
     }
 
     echo json_encode(['success' => true, 'subject' => $subject]);

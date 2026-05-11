@@ -63,13 +63,14 @@ const SubjectList = () => {
                   <th style={{ padding: '0.5rem 0.75rem' }}>Code</th>
                   <th style={{ padding: '0.5rem 0.75rem' }}>Subject</th>
                   <th style={{ padding: '0.5rem 0.75rem' }}>Hours</th>
+                  <th style={{ padding: '0.5rem 0.75rem' }}>Level</th>
                   <th style={{ padding: '0.5rem 0.75rem' }}></th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={3} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>Loading…</td>
+                    <td colSpan={5} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>Loading…</td>
                   </tr>
                 )}
                 {!loading && subjects.map((s) => (
@@ -77,6 +78,7 @@ const SubjectList = () => {
                     <td style={{ padding: '0.5rem 0.75rem' }}>{s.code || (s.name ? s.name.toUpperCase().slice(0,3) + '-' + (100 + s.id) : 100 + s.id)}</td>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{s.name}</td>
                     <td style={{ padding: '0.5rem 0.75rem' }}>{s.hours ?? s.h ?? 1}</td>
+                    <td style={{ padding: '0.5rem 0.75rem' }}>{s.level ?? s.level_name ?? s.levelName ?? ''}</td>
                     <td style={{ padding: '0.5rem 0.75rem' }}>
                       {isAdmin ? (
                         <button className="btn small" onClick={() => handleEdit(s)}>Edit</button>
@@ -88,7 +90,7 @@ const SubjectList = () => {
                 ))}
                 {!loading && subjects.length === 0 && (
                   <tr>
-                    <td colSpan={3} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>No subjects found</td>
+                    <td colSpan={5} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>No subjects found</td>
                   </tr>
                 )}
               </tbody>
@@ -109,12 +111,13 @@ const SubjectList = () => {
 
           if (!result?.success) return;
           const s = result.subject;
-          if (s) {
+            if (s) {
             const normalized = {
               id: s.id,
               name: s.name ?? s.subject_name ?? s.subjectName,
               hours: s.hours ?? s.default_hours ?? s.defaultHours,
               code: s.code ?? s.subject_code ?? s.subjectCode,
+              level: s.level ?? s.default_level ?? s.levelName ?? s.level_name,
             };
             setSubjects((prev) => {
               const exists = prev.find((x) => String(x.id) === String(normalized.id));

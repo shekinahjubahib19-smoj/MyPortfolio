@@ -12,19 +12,19 @@ export async function loadSubjects() {
     return [];
   }
 }
-export async function saveSubject({ id, name, hours }) {
+export async function saveSubject({ id, name, hours, level }) {
   // Wrapper that chooses create or update based on presence of id
-  if (id) return updateSubject(id, name, hours);
-  return createSubject(name, hours);
+  if (id) return updateSubject(id, name, hours, level);
+  return createSubject(name, hours, level);
 }
 
 // Update create/update to accept hours param (backwards compatible)
-export async function createSubject(name, hours = 1) {
+export async function createSubject(name, hours = 1, level = '') {
   try {
     const res = await fetch(`${API_BASE}/create_subject.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, hours }),
+      body: JSON.stringify({ name, hours, level }),
     });
     const json = await res.json();
     return json || { success: false };
@@ -34,12 +34,12 @@ export async function createSubject(name, hours = 1) {
   }
 }
 
-export async function updateSubject(id, name, hours = 1) {
+export async function updateSubject(id, name, hours = 1, level = null) {
   try {
     const res = await fetch(`${API_BASE}/update_subject.php`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id, name, hours }),
+      body: JSON.stringify({ id, name, hours, level }),
     });
     const json = await res.json();
     return json || { success: false };

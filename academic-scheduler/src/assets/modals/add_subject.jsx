@@ -3,8 +3,10 @@ import '../css/add_subject.css';
 import { saveSubject } from '../js/subject-list';
 
 const AddSubject = ({ isOpen, onClose, onSaved, initialData }) => {
+  const levels = ['Level 1', 'Level 2', 'Level 3'];
   const [name, setName] = useState(() => initialData?.name || '');
   const [hours, setHours] = useState(() => (initialData?.hours ?? 1));
+  const [level, setLevel] = useState(() => initialData?.level || levels[0]);
   const [message, setMessage] = useState('');
   const [working, setWorking] = useState(false);
 
@@ -17,7 +19,7 @@ const AddSubject = ({ isOpen, onClose, onSaved, initialData }) => {
     if (!name.trim()) return setMessage('Please provide a subject name');
     setWorking(true);
     try {
-      const res = await saveSubject({ id: initialData?.id, name: name.trim(), hours: Number(hours) || 1 });
+      const res = await saveSubject({ id: initialData?.id, name: name.trim(), hours: Number(hours) || 1, level });
       if (res?.success) {
         setMessage('Saved');
         if (typeof onSaved === 'function') onSaved(res);
@@ -62,6 +64,18 @@ const AddSubject = ({ isOpen, onClose, onSaved, initialData }) => {
             onChange={(e) => setHours(e.target.value)}
             required
           />
+
+          <label>Level</label>
+          <select
+            className="input-field"
+            value={level}
+            onChange={(e) => setLevel(e.target.value)}
+            required
+          >
+            {levels.map((l) => (
+              <option key={l} value={l}>{l}</option>
+            ))}
+          </select>
 
           <div className="actions">
             <button type="button" className="btn secondary" onClick={onClose}>Cancel</button>

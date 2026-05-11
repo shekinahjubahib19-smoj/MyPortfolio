@@ -25,6 +25,7 @@ try {
 
     $subject_name = trim($data->name ?? '');
     $hours = isset($data->hours) ? (float)$data->hours : 1;
+    $level = isset($data->level) ? trim($data->level) : '';
 
     if ($subject_name === '') {
         echo json_encode(['success' => false, 'message' => 'Subject name is required']);
@@ -34,10 +35,11 @@ try {
     // Insert using actual column names in the database. include a placeholder subject_code
     // in case the column is NOT NULL with no default.
     $placeholder_code = '';
-    $query = "INSERT INTO subjects (subject_name, default_hours, subject_code, created_at) VALUES (?, ?, ?, NOW())";
+    // include level column if present in schema
+    $query = "INSERT INTO subjects (subject_name, default_hours, subject_code, level, created_at) VALUES (?, ?, ?, ?, NOW())";
     $stmt = $conn->prepare($query);
     if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
-    $stmt->bind_param('sds', $subject_name, $hours, $placeholder_code);
+    $stmt->bind_param('sdss', $subject_name, $hours, $placeholder_code, $level);
 
     if ($stmt->execute()) {
         $id = $stmt->insert_id;
@@ -63,13 +65,14 @@ try {
         }
 
         // Fetch the inserted row to return full subject data (mapped keys)
-        $res = $conn->query("SELECT id, subject_name, subject_code, default_hours, created_at FROM subjects WHERE id = " . intval($id) . " LIMIT 1");
+        $res = $conn->query("SELECT id, subject_name, subject_code, default_hours, level, created_at FROM subjects WHERE id = " . intval($id) . " LIMIT 1");
         $subject = $res ? $res->fetch_assoc() : null;
         if ($subject) {
             // normalize keys for frontend
             $subject['name'] = $subject['subject_name'];
             $subject['hours'] = $subject['default_hours'];
             $subject['code'] = $subject['subject_code'];
+            $subject['level'] = $subject['level'] ?? '';
         }
         echo json_encode(['success' => true, 'id' => $id, 'subject' => $subject, 'message' => 'Subject created']);
     } else {
