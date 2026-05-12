@@ -1,0 +1,78 @@
+import React, { useState, useEffect } from 'react';
+import '../css/registration.css';
+
+const StudentProfileModal = ({ isOpen, onClose, student, onSaved, readOnly = false }) => {
+  const [form, setForm] = useState(() => ({
+    studentCode: student?.student_code || '',
+    firstName: student?.first_name || '',
+    lastName: student?.last_name || '',
+    level: student?.current_level || '',
+    status: student?.enrollment_status || 'Active',
+  }));
+  const [working, setWorking] = useState(false);
+  const [message, setMessage] = useState('');
+
+  useEffect(() => {
+    setForm({
+      studentCode: student?.student_code || '',
+      firstName: student?.first_name || '',
+      lastName: student?.last_name || '',
+      level: student?.current_level || '',
+      status: student?.enrollment_status || 'Active',
+    });
+  }, [student, isOpen]);
+
+  if (!isOpen) return null;
+
+  const stop = e => e.stopPropagation();
+
+  const handleSave = async () => {
+    if (readOnly) { onClose(); return; }
+    setWorking(true); setMessage('');
+    try {
+      const payload = { id: student?.id, student_code: form.studentCode, first_name: form.firstName, last_name: form.lastName, current_level: form.level, enrollment_status: form.status };
+      const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/update_student.php', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) });
+      const json = await res.json();
+      if (json.success) { setMessage('Saved'); if (onSaved) onSaved(json); }
+      else setMessage(json.message || 'Save failed');
+    } catch (err) { console.error(err); setMessage('Failed to save'); }
+    finally { setWorking(false); }
+  };
+
+  return (
+    <div className="registration-overlay" role="dialog" aria-modal="true" onClick={onClose}>
+      <div className="registration-modal" onClick={stop} style={{ width: 'min(90vw, 620px)' }}>
+        <button className="registration-close" onClick={onClose} aria-label="Close">×</button>
+        <h3 style={{ marginTop: 0, textAlign: 'center' }}>{readOnly ? 'Student Profile' : 'Edit Student'}</h3>
+        <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+          <label>Student Code</label>
+          <input className="input-field" value={form.studentCode} onChange={(e) => setForm(f => ({ ...f, studentCode: e.target.value }))} readOnly={readOnly} />
+          <label>First name</label>
+          <input className="input-field" value={form.firstName} onChange={(e) => setForm(f => ({ ...f, firstName: e.target.value }))} readOnly={readOnly} />
+          <label>Last name</label>
+          <input className="input-field" value={form.lastName} onChange={(e) => setForm(f => ({ ...f, lastName: e.target.value }))} readOnly={readOnly} />
+          <label>Level</label>
+          <select className="input-field" value={form.level} onChange={(e) => setForm(f => ({ ...f, level: e.target.value }))} disabled={readOnly}>
+            <option>Level 1</option>
+            <option>Level 2</option>
+            <option>Level 3</option>
+          </select>
+          <label>Status</label>
+          <select className="input-field" value={form.status} onChange={(e) => setForm(f => ({ ...f, status: e.target.value }))} disabled={readOnly}>
+            <option>Active</option>
+            <option>Graduated</option>
+            <option>Inactive</option>
+          </select>
+
+          <div className="actions" style={{ marginTop: '0.5rem' }}>
+            <button className="btn secondary" onClick={onClose}>Close</button>
+            {!readOnly && <button className="btn primary" onClick={handleSave} disabled={working}>{working ? 'Saving…' : 'Save'}</button>}
+          </div>
+          {message && <p style={{ color: message.startsWith('Saved') ? '#47d147' : '#ff4d4d' }}>{message}</p>}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default StudentProfileModal;

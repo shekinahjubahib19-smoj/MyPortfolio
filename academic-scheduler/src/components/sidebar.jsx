@@ -96,6 +96,15 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
           <span className="sidebar-label">Subjects</span>
         </a>
 
+        <a href="#/students" className={`sidebar-link ${isActive('students') ? 'is-active' : ''}`}>
+          <span className="sidebar-icon" aria-hidden="true">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+              <path d="M12 2a4 4 0 100 8 4 4 0 000-8zM4 20a8 8 0 0116 0H4z" />
+            </svg>
+          </span>
+          <span className="sidebar-label">Students</span>
+        </a>
+
         <a href="#/student-assignments" className={`sidebar-link ${isActive('student-assignments') ? 'is-active' : ''}`}>
           <span className="sidebar-icon" aria-hidden="true">
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
