@@ -1,5 +1,5 @@
 // Helpers for SubjectList page: load, create, update subjects
-const API_BASE = 'http://localhost/Portfolio/academic-scheduler/backend/api';
+const API_BASE = 'http://localhost/MyPortfolio/academic-scheduler/backend/api';
 
 export async function loadSubjects() {
   try {

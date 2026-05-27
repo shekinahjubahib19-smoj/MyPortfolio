@@ -1,7 +1,258 @@
-.ta-root { padding: 1.25rem; color: rgba(255,255,255,0.95); }
-.ta-header h1 { margin: 0; font-size: 1.25rem; }
-.ta-sub { margin: 0.25rem 0 1rem 0; color: rgba(255,255,255,0.7); }
-.ta-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 0.5rem; }
-.ta-item { display:flex; justify-content:space-between; align-items:center; background: rgba(255,255,255,0.03); padding:0.6rem; border-radius:0.5rem; }
-.ta-name { font-weight:600; }
-.ta-load { color: rgba(255,255,255,0.75); }
+.ta-root {
+  padding: 1.25rem;
+  color: rgba(255, 255, 255, 0.95);
+}
+.ta-header h1 {
+  margin: 0;
+  font-size: 1.35rem;
+  letter-spacing: 0.02em;
+}
+.ta-sub {
+  margin: 0.25rem 0 1rem 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+.ta-message {
+  margin-bottom: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.4rem;
+  background: rgba(255, 255, 255, 0.05);
+}
+.ta-message.success {
+  border: 1px solid rgba(0, 200, 120, 0.4);
+  color: #b7ffd9;
+}
+.ta-message.error {
+  border: 1px solid rgba(255, 100, 100, 0.4);
+  color: #ffd2d2;
+}
+.ta-message.info {
+  border: 1px solid rgba(80, 180, 255, 0.35);
+  color: #cfe9ff;
+}
+
+.ta-steps {
+  display: grid;
+  gap: 1rem;
+}
+.ta-steps-bar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+.ta-step-pill {
+  padding: 0.6rem 0.75rem;
+  border-radius: 0.6rem;
+  background: rgba(255, 255, 255, 0.03);
+  display: grid;
+  gap: 0.15rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ta-step-pill span {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.6);
+}
+.ta-step-pill strong {
+  font-size: 0.95rem;
+}
+.ta-step-pill.active {
+  border-color: rgba(0, 200, 255, 0.45);
+  box-shadow: 0 0 0 1px rgba(0, 200, 255, 0.25) inset;
+}
+
+.ta-panel {
+  background: rgba(255, 255, 255, 0.03);
+  padding: 1rem;
+  border-radius: 0.7rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.ta-panel-title {
+  font-weight: 700;
+  margin-bottom: 0.5rem;
+}
+.ta-step {
+  display: grid;
+  gap: 0.75rem;
+}
+.ta-step-sub {
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ta-search input {
+  width: 100%;
+  padding: 0.55rem 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: #0b0f14;
+  color: #fff;
+}
+
+.ta-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.5rem;
+}
+.ta-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.6rem;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  transition:
+    border-color 0.2s ease,
+    background 0.2s ease;
+}
+.ta-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+.ta-item.active {
+  outline: 1px solid rgba(0, 200, 255, 0.35);
+}
+.ta-name {
+  font-weight: 600;
+}
+.ta-load {
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+.ta-row label {
+  color: rgba(255, 255, 255, 0.8);
+}
+.ta-row input,
+.ta-row select {
+  background: #0b0f14;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Single-column form layout tweaks: keep label and control close */
+.ta-form-single {
+  max-width: 980px;
+  margin: 0 auto;
+}
+.ta-form-single .ta-panel {
+  padding: 0.9rem;
+}
+.ta-form-single .ta-row {
+  justify-content: flex-start;
+}
+.ta-form-single .ta-row label {
+  flex: 0 0 160px;
+  width: 160px;
+  margin-right: 0.5rem;
+}
+.ta-form-single .ta-row input,
+.ta-form-single .ta-row select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ta-subjects {
+  display: grid;
+  gap: 0.4rem;
+  max-height: 260px;
+  overflow: auto;
+  padding-right: 0.2rem;
+}
+.ta-check {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.ta-hours {
+  margin-top: 0.25rem;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.ta-form {
+  display: grid;
+  gap: 0.5rem;
+  grid-template-columns: repeat(2, minmax(140px, 1fr));
+}
+.ta-form .btn {
+  grid-column: span 2;
+}
+
+.ta-table-wrap {
+  overflow-x: auto;
+  border-radius: 0.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  margin-top: 1rem;
+}
+.ta-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ta-table th,
+.ta-table td {
+  padding: 0.45rem 0.6rem;
+  text-align: left;
+}
+.ta-table thead tr {
+  background: rgba(255, 255, 255, 0.03);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+.ta-table tbody tr + tr {
+  border-top: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.ta-preview {
+  display: grid;
+  gap: 0.5rem;
+}
+.ta-preview-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.45rem 0.6rem;
+  border-radius: 0.45rem;
+  background: rgba(255, 255, 255, 0.04);
+}
+.ta-note {
+  margin: 0;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.ta-step-actions {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+.ta-empty {
+  opacity: 0.7;
+}
+.ta-btn-outline {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 1100px) {
+  .ta-steps-bar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ta-form {
+    grid-template-columns: 1fr;
+  }
+  .ta-form .btn {
+    grid-column: span 1;
+  }
+  .ta-step-actions {
+    justify-content: space-between;
+  }
+  .ta-form-single .ta-row label {
+    flex: 0 0 120px;
+    width: 120px;
+  }
+}

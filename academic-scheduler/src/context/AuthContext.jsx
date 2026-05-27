@@ -33,7 +33,7 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     // Call backend login endpoint (expects `username` + `password`)
-    const resp = await fetch('http://localhost/Portfolio/academic-scheduler/backend/login.php', {
+    const resp = await fetch('http://localhost/MyPortfolio/academic-scheduler/backend/login.php', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username: email, password }),

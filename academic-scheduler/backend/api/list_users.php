@@ -26,7 +26,7 @@ try {
         ];
 
         // load profile for any user role
-        $stmt = $conn->prepare("SELECT id, teacher_code, first_name, last_name, max_hours_per_day, total_rendered_hours FROM teacher_profiles WHERE user_id = ? LIMIT 1");
+        $stmt = $conn->prepare("SELECT id, teacher_code, first_name, last_name, max_hours_per_day, total_rendered_hours, day_off FROM teacher_profiles WHERE user_id = ? LIMIT 1");
         if ($stmt) {
             $stmt->bind_param('i', $r['id']);
             $stmt->execute();
@@ -53,11 +53,13 @@ try {
                 }
 
                 $user['profile'] = [
+                    'id' => $pr['id'],
                     'teacher_code' => $pr['teacher_code'],
                     'first_name' => $pr['first_name'],
                     'last_name' => $pr['last_name'],
                     'max_hours_per_day' => $pr['max_hours_per_day'],
                     'total_rendered_hours' => $pr['total_rendered_hours'],
+                    'day_off' => $pr['day_off'] ?? null,
                     'subjects' => $subjects,
                 ];
             }

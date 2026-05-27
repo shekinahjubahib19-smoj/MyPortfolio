@@ -58,7 +58,7 @@ const ChangePassModal = ({ isOpen, user, onChanged, onLogout }) => {
 
     setWorking(true);
     try {
-      const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/change_password.php', {
+      const res = await fetch('http://localhost/MyPortfolio/academic-scheduler/backend/api/change_password.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

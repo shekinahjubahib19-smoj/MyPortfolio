@@ -18,25 +18,24 @@ short cut:
 
 **/
 
-import React from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext';
-import bgImage from './assets/img/bg-3d.jpg';
-import Navbar from './components/navbar';
-import Sidebar from './components/sidebar';
-import Hero from './sections/hero';
-import Login from './sections/login';
-import Dashboard from './pages/dashboard';
-import UserManagement from './pages/user-management';
-import MasterScheduler from './pages/master-scheduler';
-import TeacherAllocation from './pages/teacher-allocation';
-import StudentAssignments from './pages/student-assignments';
-import Distribution from './pages/distribution';
-import RoomMgmt from './pages/room-mgmt';
-import SubjectList from './pages/subject-list';
-import SetUpProfile from './pages/set-up-profile';
-import ChangePassModal from './assets/modals/change-pass';
-import './assets/css/landing.css';
-import { useLandingState } from './assets/js/landing';
+import React from "react";
+import { AuthProvider, useAuth } from "./context/AuthContext";
+import bgImage from "./assets/img/bg-3d.jpg";
+import Navbar from "./components/navbar";
+import Sidebar from "./components/sidebar";
+import Hero from "./sections/hero";
+import Login from "./sections/login";
+import Dashboard from "./pages/dashboard";
+import UserManagement from "./pages/user-management";
+import MasterScheduler from "./pages/master-scheduler";
+import TeacherAllocation from "./pages/teacher-allocation";
+import SubjectList from "./pages/subject-list";
+import Teachers from "./pages/teachers";
+import SetUpProfile from "./pages/set-up-profile";
+import Students from "./pages/students";
+import ChangePassModal from "./assets/modals/change-pass";
+import "./assets/css/landing.css";
+import { useLandingState } from "./assets/js/landing";
 
 function AppInner() {
   const { user, logout, updateUser } = useAuth();
@@ -54,16 +53,17 @@ function AppInner() {
 
   const [route, setRoute] = React.useState(() => {
     try {
-      return (window.location.hash || '').replace('#/', '');
+      return (window.location.hash || "").replace("#/", "");
     } catch {
-      return '';
+      return "";
     }
   });
 
   React.useEffect(() => {
-    const onHash = () => setRoute((window.location.hash || '').replace('#/', ''));
-    window.addEventListener('hashchange', onHash);
-    return () => window.removeEventListener('hashchange', onHash);
+    const onHash = () =>
+      setRoute((window.location.hash || "").replace("#/", ""));
+    window.addEventListener("hashchange", onHash);
+    return () => window.removeEventListener("hashchange", onHash);
   }, []);
 
   React.useEffect(() => {
@@ -72,40 +72,48 @@ function AppInner() {
     try {
       if (!user) {
         // When signed out, reset to landing root (no route)
-        if ((window.location.hash || '').replace('#/', '') !== '') {
-          window.location.hash = '#/';
+        if ((window.location.hash || "").replace("#/", "") !== "") {
+          window.location.hash = "#/";
         }
         return;
       }
 
-      const current = (window.location.hash || '').replace('#/', '');
+      const current = (window.location.hash || "").replace("#/", "");
 
       if (user.must_change_password) {
-        if (current !== 'dashboard') {
-          window.location.hash = '#/dashboard';
+        if (current !== "dashboard") {
+          window.location.hash = "#/dashboard";
         }
         return;
       }
 
       // If user just signed in and there's no route, default to dashboard
-      if (user && (current === '' || current === '/')) {
+      if (user && (current === "" || current === "/")) {
         // If profile incomplete, send to setup first
-        if ((user.role === 'TEACHER' || user.role === 'ADMIN') && !user.is_profile_complete) {
-          window.location.hash = '#/set-up-profile';
+        if (
+          (user.role === "TEACHER" || user.role === "ADMIN") &&
+          !user.is_profile_complete
+        ) {
+          window.location.hash = "#/set-up-profile";
         } else {
-          window.location.hash = '#/dashboard';
+          window.location.hash = "#/dashboard";
         }
         return;
       }
 
       // If a non-admin user is on the admin-only `users` route, redirect
-      if (user && user.role !== 'ADMIN' && current === 'users') {
-        window.location.hash = '#/dashboard';
+      if (user && user.role !== "ADMIN" && current === "users") {
+        window.location.hash = "#/dashboard";
       }
 
       // If a user hasn't completed profile, always redirect to setup
-      if (user && (user.role === 'TEACHER' || user.role === 'ADMIN') && !user.is_profile_complete && current !== 'set-up-profile') {
-        window.location.hash = '#/set-up-profile';
+      if (
+        user &&
+        (user.role === "TEACHER" || user.role === "ADMIN") &&
+        !user.is_profile_complete &&
+        current !== "set-up-profile"
+      ) {
+        window.location.hash = "#/set-up-profile";
       }
     } catch {
       // ignore - window may be unavailable in some environments
@@ -115,49 +123,55 @@ function AppInner() {
   const showChangePass = !!user?.must_change_password;
 
   const handlePasswordChanged = () => {
-    if (typeof updateUser === 'function') {
+    if (typeof updateUser === "function") {
       updateUser({ must_change_password: false });
     }
   };
 
   return (
-      <div 
+    <div
       onMouseMove={handleMouseMove}
       className="landing-root relative min-h-screen w-full overflow-hidden bg-black"
     >
       <Navbar />
       <Sidebar
         collapsed={isSidebarCollapsed}
-        onToggleCollapse={() => setIsSidebarCollapsed(prev => !prev)}
+        onToggleCollapse={() => setIsSidebarCollapsed((prev) => !prev)}
       />
 
       {/* Background layers (always present) */}
-      <div 
+      <div
         className="landing-bg-layer absolute inset-0 z-0 transition-transform duration-700 ease-out"
-        style={{ 
-          transform: `translate(${mousePos.x}px, ${mousePos.y}px) scale(1.1)` 
+        style={{
+          transform: `translate(${mousePos.x}px, ${mousePos.y}px) scale(1.1)`,
         }}
       >
-        <img 
-          src={bgImage} 
-          alt="" 
+        <img
+          src={bgImage}
+          alt=""
           className="w-full h-full object-cover opacity-60 mix-blend-luminosity"
         />
         <div className="absolute inset-0 bg-gradient-to-b from-[#0f172a]/90 via-[#0f172a]/40 to-[#0f172a]" />
       </div>
 
-      <div 
+      <div
         className="landing-bg-decor absolute top-[-10%] left-[-10%] w-[600px] h-[600px] bg-blue-600/20 rounded-full blur-[140px] mix-blend-screen transition-transform duration-1000 z-0"
-        style={{ transform: `translate(${mousePos.x * -1.5}px, ${mousePos.y * -1.5}px)` }}
+        style={{
+          transform: `translate(${mousePos.x * -1.5}px, ${mousePos.y * -1.5}px)`,
+        }}
       />
-      <div 
+      <div
         className="landing-bg-decor absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-purple-600/10 rounded-full blur-[120px] mix-blend-screen transition-transform duration-1000 z-0"
-        style={{ transform: `translate(${mousePos.x * 1.2}px, ${mousePos.y * 1.2}px)` }}
+        style={{
+          transform: `translate(${mousePos.x * 1.2}px, ${mousePos.y * 1.2}px)`,
+        }}
       />
 
       {/* If logged in show Dashboard, otherwise show landing split */}
       {user ? (
-        <div className={`app-root relative z-20 ${isSidebarCollapsed ? 'is-collapsed' : ''}`}>
+        <div
+          className={`app-root relative z-20 ${isSidebarCollapsed ? "is-collapsed" : ""}`}
+        >
           <ChangePassModal
             isOpen={showChangePass}
             user={user}
@@ -166,40 +180,41 @@ function AppInner() {
           />
           {(() => {
             switch (route) {
-              case 'users':
+              case "students":
+                return <Students />;
+              case "users":
                 return <UserManagement />;
-              case 'master-scheduler':
+              case "master-scheduler":
                 return <MasterScheduler />;
-              case 'teacher-allocation':
+              case "teacher-allocation":
                 return <TeacherAllocation />;
-              case 'student-assignments':
-                return <StudentAssignments />;
-              case 'distribution':
-                return <Distribution />;
-              case 'room-mgmt':
-                return <RoomMgmt />;
-              case 'subjects':
+              case "teachers":
+                return <Teachers />;
+              case "subjects":
                 return <SubjectList />;
-              case 'set-up-profile':
+              case "set-up-profile":
                 return <SetUpProfile />;
-              case 'dashboard':
-              case '':
+              case "dashboard":
+              case "":
               default:
                 return <Dashboard />;
             }
           })()}
         </div>
       ) : (
-        <div className={`landing-split ${showLogin || isLeaving ? 'landing-split--active' : ''} ${isLeaving ? 'landing-split--leaving' : ''} ${isHeroLeaving ? 'landing-split--hero-leaving' : ''}`}>
+        <div
+          className={`landing-split ${showLogin || isLeaving ? "landing-split--active" : ""} ${isLeaving ? "landing-split--leaving" : ""} ${isHeroLeaving ? "landing-split--hero-leaving" : ""}`}
+        >
           <div className="landing-hero-pane">
             <Hero onLogin={() => setShowLogin(true)} />
           </div>
-          <div className={`landing-login-pane ${showLogin ? 'is-visible' : ''}`}>
+          <div
+            className={`landing-login-pane ${showLogin ? "is-visible" : ""}`}
+          >
             <Login onBack={handleClose} />
           </div>
         </div>
       )}
-
     </div>
   );
 }

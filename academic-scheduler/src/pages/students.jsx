@@ -1,10 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import '../assets/css/students.css';
-import EnrollStudent from '../assets/modals/enroll_student';
-import StudentProfileModal from '../assets/modals/student_profile_modal';
+import React, { useState, useEffect, useRef } from "react";
+import "../assets/css/students.css";
+import EnrollStudent from "../assets/modals/enroll_student";
+import StudentProfileModal from "../assets/modals/student_profile_modal";
+import { useAuth } from "../context/AuthContext";
 
 const Students = () => {
-
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
   const fetchRef = useRef(null);
@@ -13,16 +13,20 @@ const Students = () => {
   const [profileOpen, setProfileOpen] = useState(false);
   const [profileReadOnly, setProfileReadOnly] = useState(true);
 
+  const { isAdmin } = useAuth();
+
   useEffect(() => {
     fetchRef.current = async () => {
       setLoading(true);
       try {
-        const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/list_students.php');
+        const res = await fetch(
+          "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_students.php",
+        );
         const json = await res.json();
         if (json.success) setStudents(json.students || []);
         else setStudents([]);
       } catch (e) {
-        console.error('Failed to load students', e);
+        console.error("Failed to load students", e);
         setStudents([]);
       } finally {
         setLoading(false);
@@ -31,17 +35,36 @@ const Students = () => {
     fetchRef.current();
   }, []);
 
-  const openProfile = (s, readOnly = true) => { setSelectedStudent(s); setProfileReadOnly(readOnly); setProfileOpen(true); };
+  const openProfile = (s, readOnly = true) => {
+    setSelectedStudent(s);
+    setProfileReadOnly(readOnly);
+    setProfileOpen(true);
+  };
 
   return (
     <div className="students-root">
-      <header className="um-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <header
+        className="um-header"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
         <div>
           <h1>Students</h1>
           <p className="um-sub">View and manage student records</p>
         </div>
         <div>
-          <button className="btn" onClick={() => setEnrollOpen(true)} style={{ position: 'relative', zIndex: 20 }}>Enroll</button>
+          {isAdmin ? (
+            <button
+              className="btn"
+              onClick={() => setEnrollOpen(true)}
+              style={{ position: "relative", zIndex: 20 }}
+            >
+              New
+            </button>
+          ) : null}
         </div>
       </header>
 
@@ -58,43 +81,90 @@ const Students = () => {
 
       <StudentProfileModal
         isOpen={profileOpen}
-        onClose={() => { setProfileOpen(false); setSelectedStudent(null); setProfileReadOnly(true); }}
+        onClose={() => {
+          setProfileOpen(false);
+          setSelectedStudent(null);
+          setProfileReadOnly(true);
+        }}
         student={selectedStudent}
         readOnly={profileReadOnly}
-        onSaved={() => { if (fetchRef.current) fetchRef.current(); }}
+        onSaved={() => {
+          if (fetchRef.current) fetchRef.current();
+        }}
       />
 
       <div className="students-list">
-        <div style={{ padding: '0 0rem' }}>
+        <div style={{ padding: "0 0rem" }}>
           <p>Students count: {students.length}</p>
 
-          <div style={{ marginTop: '0.5rem', maxHeight: '75vh', overflowY: 'auto', overflowX: 'auto' }}>
-            <table className="um-table" style={{ width: '100%', borderCollapse: 'collapse' }}>
+          <div
+            style={{
+              marginTop: "0.5rem",
+              maxHeight: "75vh",
+              overflowY: "auto",
+              overflowX: "auto",
+            }}
+          >
+            <table
+              className="um-table"
+              style={{ width: "100%", borderCollapse: "collapse" }}
+            >
               <thead>
-                <tr style={{ textAlign: 'left', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
-                  <th style={{ padding: '0.5rem 0.75rem' }}>Student Code</th>
-                  <th style={{ padding: '0.5rem 0.75rem' }}>Name</th>
-                  <th style={{ padding: '0.5rem 0.75rem' }}>Level</th>
-                  <th style={{ padding: '0.5rem 0.75rem' }}>Status</th>
+                <tr
+                  style={{
+                    textAlign: "left",
+                    borderBottom: "1px solid rgba(255,255,255,0.06)",
+                  }}
+                >
+                  <th style={{ padding: "0.5rem 0.75rem" }}>Student Code</th>
+                  <th style={{ padding: "0.5rem 0.75rem" }}>First name</th>
+                  <th style={{ padding: "0.5rem 0.75rem" }}>Last name</th>
+                  <th style={{ padding: "0.5rem 0.75rem" }}>Current level</th>
                 </tr>
               </thead>
               <tbody>
                 {loading && (
                   <tr>
-                    <td colSpan={4} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>Loading…</td>
+                    <td
+                      colSpan={4}
+                      style={{ padding: "0.5rem 0.75rem", opacity: 0.6 }}
+                    >
+                      Loading…
+                    </td>
                   </tr>
                 )}
-                {!loading && students.map((s) => (
-                  <tr key={s.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.03)', cursor: 'pointer' }} onClick={() => openProfile(s)}>
-                    <td style={{ padding: '0.5rem 0.75rem' }}>{s.student_code ?? '-'}</td>
-                    <td style={{ padding: '0.5rem 0.75rem' }}>{(s.first_name || '') + (s.last_name ? ' ' + s.last_name : '')}</td>
-                    <td style={{ padding: '0.5rem 0.75rem' }}>{s.current_level ?? ''}</td>
-                    <td style={{ padding: '0.5rem 0.75rem' }}>{s.enrollment_status ?? ''}</td>
-                  </tr>
-                ))}
+                {!loading &&
+                  students.map((s) => (
+                    <tr
+                      key={s.id}
+                      style={{
+                        borderBottom: "1px solid rgba(255,255,255,0.03)",
+                        cursor: "pointer",
+                      }}
+                       onClick={() => openProfile(s, !isAdmin)}
+                    >
+                      <td style={{ padding: "0.5rem 0.75rem" }}>
+                        {s.student_code ?? "-"}
+                      </td>
+                      <td style={{ padding: "0.5rem 0.75rem" }}>
+                        {s.first_name ?? ""}
+                      </td>
+                      <td style={{ padding: "0.5rem 0.75rem" }}>
+                        {s.last_name ?? ""}
+                      </td>
+                      <td style={{ padding: "0.5rem 0.75rem" }}>
+                        {s.current_level ?? ""}
+                      </td>
+                    </tr>
+                  ))}
                 {!loading && students.length === 0 && (
                   <tr>
-                    <td colSpan={4} style={{ padding: '0.5rem 0.75rem', opacity: 0.6 }}>No students found</td>
+                    <td
+                      colSpan={4}
+                      style={{ padding: "0.5rem 0.75rem", opacity: 0.6 }}
+                    >
+                      No students found
+                    </td>
                   </tr>
                 )}
               </tbody>

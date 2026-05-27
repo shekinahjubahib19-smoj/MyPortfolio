@@ -28,7 +28,7 @@ const EnrollStudent = ({ isOpen, onClose, onSaved, initialData }) => {
         enrollment_status: status,
       };
       const url = initialData?.id ? '/backend/api/update_student.php' : '/backend/api/create_student.php';
-      const res = await fetch(`http://localhost/Portfolio/academic-scheduler${url}`, {
+      const res = await fetch(`http://localhost/MyPortfolio/academic-scheduler${url}`, {
         method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
       });
       const json = await res.json();

@@ -1,5 +1,5 @@
 export async function fetchSubjects() {
-  const url = 'http://localhost/Portfolio/academic-scheduler/backend/api/list_subjects.php';
+  const url = 'http://localhost/MyPortfolio/academic-scheduler/backend/api/list_subjects.php';
   const res = await fetch(url);
   const j = await res.json().catch(() => ({}));
   if (j && j.success) return j.subjects || [];
@@ -7,7 +7,7 @@ export async function fetchSubjects() {
 }
 
 export async function fetchUserProfile(userId) {
-  const url = 'http://localhost/Portfolio/academic-scheduler/backend/api/list_users.php';
+  const url = 'http://localhost/MyPortfolio/academic-scheduler/backend/api/list_users.php';
   const res = await fetch(url);
   const j = await res.json().catch(() => ({}));
   if (j && j.success) {
@@ -18,7 +18,7 @@ export async function fetchUserProfile(userId) {
 }
 
 export async function saveTeacherProfile(payload) {
-  const url = 'http://localhost/Portfolio/academic-scheduler/backend/api/update_teacher_profile.php';
+  const url = 'http://localhost/MyPortfolio/academic-scheduler/backend/api/update_teacher_profile.php';
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },

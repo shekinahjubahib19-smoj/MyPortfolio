@@ -1,11 +1,12 @@
 -- Complete database creation script for academic_scheduler
--- NOTE: This file does NOT drop the existing database. Drop manually if you wish.
+-- Cleans up existing definitions to prevent duplicate key/column execution errors.
 
-CREATE DATABASE IF NOT EXISTS academic_scheduler CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+DROP DATABASE IF EXISTS academic_scheduler;
+CREATE DATABASE academic_scheduler CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE academic_scheduler;
 
 -- 1. Core users (authentication)
-CREATE TABLE IF NOT EXISTS users (
+CREATE TABLE users (
   id INT AUTO_INCREMENT PRIMARY KEY,
   username VARCHAR(100) NOT NULL UNIQUE,
   password_hash VARCHAR(255) NOT NULL,
@@ -15,17 +16,29 @@ CREATE TABLE IF NOT EXISTS users (
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 2. Subjects table (human-readable code shown in UI)
-CREATE TABLE IF NOT EXISTS subjects (
+-- 2. Subjects table (Includes the 'level' column amendment directly)
+CREATE TABLE subjects (
   id INT AUTO_INCREMENT PRIMARY KEY,
   subject_name VARCHAR(100) NOT NULL,
   subject_code VARCHAR(20) NOT NULL UNIQUE,
+  level VARCHAR(50) DEFAULT NULL,
   default_hours DECIMAL(4,2) NOT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB;
 
--- 3. Teacher profiles (one per teacher user)
-CREATE TABLE IF NOT EXISTS teacher_profiles (
+-- 3. Students table (Moved up so it can be referenced by weekly_schedules)
+CREATE TABLE students (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    student_code VARCHAR(20) UNIQUE NOT NULL,
+    first_name VARCHAR(50) NOT NULL,
+    last_name VARCHAR(50) NOT NULL,
+    current_level VARCHAR(20), -- e.g., 'Level 1', 'Grade 7'
+    enrollment_status ENUM('Active', 'Graduated', 'Inactive') DEFAULT 'Active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB;
+
+-- 4. Teacher profiles (one per teacher user)
+CREATE TABLE teacher_profiles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   teacher_code VARCHAR(20) UNIQUE,
@@ -39,8 +52,8 @@ CREATE TABLE IF NOT EXISTS teacher_profiles (
   CONSTRAINT fk_teacher_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 4. Many-to-many: which subjects each teacher can teach
-CREATE TABLE IF NOT EXISTS teacher_subjects (
+-- 5. Many-to-many: which subjects each teacher can teach
+CREATE TABLE teacher_subjects (
   id INT AUTO_INCREMENT PRIMARY KEY,
   teacher_profile_id INT NOT NULL,
   subject_id INT NOT NULL,
@@ -50,8 +63,8 @@ CREATE TABLE IF NOT EXISTS teacher_subjects (
   CONSTRAINT fk_ts_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
--- 5. Assignments / schedule rows (use to compute rendered hours)
-CREATE TABLE IF NOT EXISTS teacher_assignments (
+-- 6. Assignments / schedule rows (use to compute rendered hours)
+CREATE TABLE teacher_assignments (
   id INT AUTO_INCREMENT PRIMARY KEY,
   teacher_profile_id INT NOT NULL,
   subject_id INT NOT NULL,
@@ -64,8 +77,25 @@ CREATE TABLE IF NOT EXISTS teacher_assignments (
   INDEX idx_ta_date (assigned_date)
 ) ENGINE=InnoDB;
 
--- 6. Seed admin account (password hash for 'admin123')
-INSERT IGNORE INTO users (username, password_hash, role, is_profile_complete, must_change_password)
+-- 7. Master Scheduler: weekly_schedules table (Includes final level and student structural changes)
+CREATE TABLE weekly_schedules (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    teacher_profile_id INT NOT NULL,
+    subject_id INT NOT NULL,
+    student_id INT DEFAULT NULL,
+    level VARCHAR(20) DEFAULT NULL,
+    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
+    start_time TIME NOT NULL,
+    end_time TIME NOT NULL,
+    room_name VARCHAR(50) DEFAULT 'TBA',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_ws_teacher FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ws_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+    CONSTRAINT fk_ws_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- 8. Seed admin account (password hash for 'admin123')
+INSERT INTO users (username, password_hash, role, is_profile_complete, must_change_password)
 VALUES (
   'admin_user',
   '$2y$10$9vaDS32NxAIGEsQZfTylguhD8tvUWBpyOAaASMljbZbS7h.PmvCEG',
@@ -74,57 +104,11 @@ VALUES (
   0
 );
 
--- 7. Optional: seed example subjects
-INSERT IGNORE INTO subjects (subject_name, subject_code, default_hours)
+-- 9. Optional: seed example subjects
+INSERT INTO subjects (subject_name, subject_code, default_hours)
 VALUES
   ('English', 'ENG-101', 1.50),
   ('Filipino', 'FIL-101', 1.50),
   ('Mathematics', 'MTH-101', 1.50);
-
--- 8. Final adjustments: ensure indexes exist (safe to run)
-ALTER TABLE subjects ADD UNIQUE KEY IF NOT EXISTS ux_subject_code (subject_code(20));
-ALTER TABLE teacher_profiles ADD UNIQUE KEY IF NOT EXISTS ux_teacher_user (user_id);
-ALTER TABLE teacher_profiles ADD UNIQUE KEY IF NOT EXISTS ux_teacher_code (teacher_code(20));
-
-
--- Migration: Create weekly_schedules table
--- Purpose: To handle specific time-slots and days for the Master Scheduler.
-
-CREATE TABLE IF NOT EXISTS weekly_schedules (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    teacher_profile_id INT NOT NULL,
-    subject_id INT NOT NULL,
-    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    room_name VARCHAR(50) DEFAULT 'TBA',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_ws_teacher FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id) ON DELETE CASCADE,
-    CONSTRAINT fk_ws_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE
-) ENGINE=InnoDB;
-
-ALTER TABLE weekly_schedules 
-ADD COLUMN student_name VARCHAR(100) AFTER subject_id,
-ADD COLUMN level VARCHAR(20) AFTER student_name;
-
-CREATE TABLE IF NOT EXISTS students (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    student_code VARCHAR(20) UNIQUE NOT NULL,
-    first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
-    current_level VARCHAR(20), -- e.g., 'Level 1', 'Grade 7'
-    enrollment_status ENUM('Active', 'Graduated', 'Inactive') DEFAULT 'Active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-) ENGINE=InnoDB;
-
-ALTER TABLE weekly_schedules 
-ADD COLUMN student_id INT AFTER subject_id,
-ADD CONSTRAINT fk_ws_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE;
-
--- If you already added student_name, you can drop it:
-ALTER TABLE weekly_schedules DROP COLUMN student_name;
-
-ALTER TABLE subjects 
-ADD COLUMN level VARCHAR(50) AFTER subject_code;
 
 -- End of script

@@ -13,7 +13,7 @@ const Registration = ({ isOpen, onClose, onShowResult }) => {
 		setMessage('Processing...');
 
 		try {
-			const response = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/register_user.php', {
+			const response = await fetch('http://localhost/MyPortfolio/academic-scheduler/backend/api/register_user.php', {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(formData),

@@ -25,7 +25,7 @@ const UserManagement = () => {
   useEffect(() => {
     fetchRef.current = async () => {
       try {
-        const res = await fetch('http://localhost/Portfolio/academic-scheduler/backend/api/list_users.php');
+        const res = await fetch('http://localhost/MyPortfolio/academic-scheduler/backend/api/list_users.php');
         const json = await res.json();
         if (json.success) setUsers(json.users || []);
       } catch (e) {

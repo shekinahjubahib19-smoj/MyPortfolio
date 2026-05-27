@@ -1,20 +1,40 @@
-.students-root { padding: 1.25rem; color: rgba(255,255,255,0.95); box-sizing: border-box; }
-.students-root .um-header h1 { margin: 0; font-size: 1.25rem; }
-.students-root .um-sub { margin: 0.25rem 0 1rem 0; color: rgba(255,255,255,0.7); }
+.students-root {
+  padding: 1.25rem;
+  color: rgba(255, 255, 255, 0.95);
+  box-sizing: border-box;
+}
+.students-root .um-header h1 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+.students-root .um-sub {
+  margin: 0.25rem 0 1rem 0;
+  color: rgba(255, 255, 255, 0.7);
+}
 
-.students-list { display: flex; flex-direction: column; gap: 0.6rem; margin-top: 0rem; }
-.students-list p { margin: 0; }
+.students-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  margin-top: 0rem;
+}
+.students-list p {
+  margin: 0;
+}
 
 /* Table styles (reuse patterns from user-management) */
 .students-root .um-table {
   width: 100%;
-  table-layout: auto;
+  table-layout: fixed; /* ensure equal column widths */
+}
+.students-root .um-table thead th {
+  width: 25%;
 }
 .students-root .um-table thead th {
   position: sticky;
   top: 0;
   z-index: 10;
-  background: linear-gradient(#2B59C3, #673AB7, #A336F1);
+  background: linear-gradient(#2b59c3, #673ab7, #a336f1);
   text-align: left;
 }
 .students-root .um-table th,
@@ -24,11 +44,21 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
-.students-root .um-table tbody { isolation: isolate; }
-.students-root .um-table tbody tr { position: relative; transition: background-color 140ms ease; }
-.students-root .um-table tbody td { position: relative; z-index: 2; }
+.students-root .um-table tbody {
+  isolation: isolate;
+}
+.students-root .um-table tbody tr {
+  position: relative;
+  transition: background-color 140ms ease;
+}
+.students-root .um-table tbody td {
+  position: relative;
+  z-index: 2;
+}
 
 /* Small responsive tweaks */
 @media (max-width: 720px) {
-  .students-root { padding: 1rem; }
+  .students-root {
+    padding: 1rem;
+  }
 }
