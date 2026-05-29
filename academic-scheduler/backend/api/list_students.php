@@ -20,7 +20,7 @@ ob_start();
 try {
     include __DIR__ . '/../config/db.php';
 
-    $query = "SELECT id, student_code, first_name, last_name, current_level, enrollment_status, created_at FROM students ORDER BY created_at DESC";
+    $query = "SELECT id, student_code, first_name, last_name, email, current_level, enrollment_status, created_at FROM students ORDER BY created_at DESC";
     $stmt = $conn->prepare($query);
     if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
     $stmt->execute();

@@ -12,6 +12,7 @@ const TeacherProfileModal = ({
     const p = user?.profile || null;
     return {
       teacherCode: String(p?.teacher_code ?? ""),
+      teacherEmail: p?.teacher_email || user?.email || "",
       firstName: p?.first_name || "",
       lastName: p?.last_name || "",
       maxHours: p?.max_hours_per_day ?? 8,
@@ -118,6 +119,7 @@ const TeacherProfileModal = ({
       const payload = {
         user_id: user.id,
         teacher_code: form.teacherCode,
+        teacher_email: form.teacherEmail,
         first_name: form.firstName,
         last_name: form.lastName,
         max_hours_per_day: Number(form.maxHours) || 0,
@@ -289,6 +291,26 @@ const TeacherProfileModal = ({
         </button>
         <h3 style={{ marginTop: 0, textAlign: "center" }}>Teacher Profile</h3>
         <div style={{ display: "flex", gap: "1rem", flexDirection: "column" }}>
+          <div style={{ marginBottom: 6 }}>
+            <strong>Email</strong>
+            <div style={{ marginTop: 6 }}>
+              {editing ? (
+                <input
+                  className="input-field"
+                  type="email"
+                  value={form.teacherEmail}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      teacherEmail: e.target.value,
+                    }))
+                  }
+                />
+              ) : (
+                user?.email || user?.profile?.teacher_email || "-"
+              )}
+            </div>
+          </div>
           <div
             style={{
               display: "flex",

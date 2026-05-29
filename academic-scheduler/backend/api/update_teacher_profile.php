@@ -27,6 +27,7 @@ try {
     if ($user_id <= 0) throw new Exception('Missing user_id');
 
     $teacher_code = trim($data['teacher_code'] ?? '');
+    $teacher_email = trim($data['teacher_email'] ?? '');
     $first_name = trim($data['first_name'] ?? '');
     $last_name = trim($data['last_name'] ?? '');
     $max_hours = isset($data['max_hours_per_day']) ? (float)$data['max_hours_per_day'] : null;
@@ -63,9 +64,9 @@ try {
             $colCheck->close();
         }
         // update
-        $upd = $conn->prepare("UPDATE teacher_profiles SET teacher_code = ?, first_name = ?, last_name = ?, max_hours_per_day = ?, day_off = ? WHERE id = ?");
+        $upd = $conn->prepare("UPDATE teacher_profiles SET teacher_code = ?, teacher_email = ?, first_name = ?, last_name = ?, max_hours_per_day = ?, day_off = ? WHERE id = ?");
         if (!$upd) throw new Exception('Prepare failed: ' . $conn->error);
-        $upd->bind_param('sssdsi', $teacher_code, $first_name, $last_name, $max_hours, $day_off_str, $profile_id);
+        $upd->bind_param('ssssdsi', $teacher_code, $teacher_email, $first_name, $last_name, $max_hours, $day_off_str, $profile_id);
         $upd->execute();
         $upd->close();
     } else {
@@ -80,9 +81,9 @@ try {
             }
             $colCheck->close();
         }
-        $ins = $conn->prepare("INSERT INTO teacher_profiles (user_id, teacher_code, first_name, last_name, max_hours_per_day, day_off, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
+        $ins = $conn->prepare("INSERT INTO teacher_profiles (user_id, teacher_code, teacher_email, first_name, last_name, max_hours_per_day, day_off, created_at) VALUES (?, ?, ?, ?, ?, ?, ?, NOW())");
         if (!$ins) throw new Exception('Prepare failed: ' . $conn->error);
-        $ins->bind_param('isssds', $user_id, $teacher_code, $first_name, $last_name, $max_hours, $day_off_str);
+        $ins->bind_param('issssds', $user_id, $teacher_code, $teacher_email, $first_name, $last_name, $max_hours, $day_off_str);
         $ins->execute();
         $profile_id = $ins->insert_id;
         $ins->close();
@@ -117,7 +118,7 @@ try {
     }
 
     // fetch updated profile and subjects
-    $pstmt = $conn->prepare("SELECT id, teacher_code, first_name, last_name, max_hours_per_day, total_rendered_hours, day_off FROM teacher_profiles WHERE id = ? LIMIT 1");
+    $pstmt = $conn->prepare("SELECT id, teacher_code, teacher_email, first_name, last_name, max_hours_per_day, total_rendered_hours, day_off FROM teacher_profiles WHERE id = ? LIMIT 1");
     $pstmt->bind_param('i', $profile_id);
     $pstmt->execute();
     $prow = $pstmt->get_result()->fetch_assoc();

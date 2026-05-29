@@ -31,7 +31,8 @@ CREATE TABLE students (
     id INT AUTO_INCREMENT PRIMARY KEY,
     student_code VARCHAR(20) UNIQUE NOT NULL,
     first_name VARCHAR(50) NOT NULL,
-    last_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  email VARCHAR(255) DEFAULT NULL,
     current_level VARCHAR(20), -- e.g., 'Level 1', 'Grade 7'
     enrollment_status ENUM('Active', 'Graduated', 'Inactive') DEFAULT 'Active',
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -42,6 +43,7 @@ CREATE TABLE teacher_profiles (
   id INT AUTO_INCREMENT PRIMARY KEY,
   user_id INT NOT NULL,
   teacher_code VARCHAR(20) UNIQUE,
+  teacher_email VARCHAR(255) UNIQUE DEFAULT NULL,
   first_name VARCHAR(50),
   last_name VARCHAR(50),
   max_hours_per_day DECIMAL(4,2) DEFAULT 8.00,
@@ -79,19 +81,35 @@ CREATE TABLE teacher_assignments (
 
 -- 7. Master Scheduler: weekly_schedules table (Includes final level and student structural changes)
 CREATE TABLE weekly_schedules (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    teacher_profile_id INT NOT NULL,
-    subject_id INT NOT NULL,
-    student_id INT DEFAULT NULL,
-    level VARCHAR(20) DEFAULT NULL,
-    day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday') NOT NULL,
-    start_time TIME NOT NULL,
-    end_time TIME NOT NULL,
-    room_name VARCHAR(50) DEFAULT 'TBA',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT fk_ws_teacher FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id) ON DELETE CASCADE,
-    CONSTRAINT fk_ws_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
-    CONSTRAINT fk_ws_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  teacher_profile_id INT NOT NULL,
+  subject_id INT NOT NULL,
+  student_id INT DEFAULT NULL,
+  level VARCHAR(20) DEFAULT NULL,
+  -- include Sunday in case some schedules run every day
+  day_of_week ENUM('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday') NOT NULL,
+  start_time TIME NOT NULL,
+  end_time TIME NOT NULL,
+  -- mode indicates whether the session is online or face-to-face
+  mode ENUM('online','f2f') NOT NULL DEFAULT 'online',
+  -- number of weeks the schedule repeats for (period length)
+  weeks INT NOT NULL DEFAULT 1,
+  -- Online meeting fields (used when mode = 'online')
+  zoom_id VARCHAR(100) DEFAULT NULL,
+  zoom_password VARCHAR(255) DEFAULT NULL,
+  -- Room management (used when mode = 'f2f')
+  room_id INT DEFAULT NULL,
+  room_name VARCHAR(50) DEFAULT 'TBA',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  CONSTRAINT fk_ws_teacher FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ws_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,
+  CONSTRAINT fk_ws_student FOREIGN KEY (student_id) REFERENCES students(id) ON DELETE CASCADE
+  -- enforce that required fields exist depending on `mode`
+  ,CONSTRAINT chk_ws_mode_fields CHECK (
+    (mode = 'online' AND zoom_id IS NOT NULL)
+    OR
+    (mode = 'f2f' AND room_id IS NOT NULL)
+  )
 ) ENGINE=InnoDB;
 
 -- 8. Seed admin account (password hash for 'admin123')

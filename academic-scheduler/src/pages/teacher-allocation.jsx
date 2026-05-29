@@ -10,24 +10,36 @@ const TeacherAllocation = () => {
   const [maxHours, setMaxHours] = useState(8);
   const [message, setMessage] = useState({ type: "", text: "" });
   const [schedules, setSchedules] = useState([]);
-  const [step, setStep] = useState(1);
-  const [teacherQuery, setTeacherQuery] = useState("");
+  const [step, _setStep] = useState(1);
+  const [teacherQuery, _setTeacherQuery] = useState("");
   const [isSavingSchedule, setIsSavingSchedule] = useState(false);
-  const [lastRequest, setLastRequest] = useState(null);
-  const [lastResponse, setLastResponse] = useState(null);
-  const [lastError, setLastError] = useState(null);
-  const [form, setForm] = useState({
-    day_of_week: "Monday",
+  const [_lastRequest, setLastRequest] = useState(null);
+  const [_lastResponse, setLastResponse] = useState(null);
+  const [_lastError, setLastError] = useState(null);
+  const defaultForm = {
+    // `days` allows selecting one or more weekdays for the session
+    days: ["Monday"],
     start_time: "08:00",
     end_time: "09:00",
     subject_id: "",
     student_id: "",
-  });
+    // class mode: 'online' | 'f2f'
+    mode: "online",
+    // number of weeks this schedule repeats for
+    weeks: 1,
+    // online fields
+    zoom_id: "",
+    zoom_pass: "",
+    // room for face-to-face sessions
+    room_name: "Room 101",
+  };
+
+  const [form, setForm] = useState(defaultForm);
 
   // auto-hide success messages after 3 seconds
   React.useEffect(() => {
-    if (message && (message.type === 'success' || message.type === 'error')) {
-      const t = setTimeout(() => setMessage({ type: '', text: '' }), 3000);
+    if (message && (message.type === "success" || message.type === "error")) {
+      const t = setTimeout(() => setMessage({ type: "", text: "" }), 3000);
       return () => clearTimeout(t);
     }
     return undefined;
@@ -69,7 +81,9 @@ const TeacherAllocation = () => {
 
   const selectTeacher = (teacher) => {
     setSelectedTeacher(teacher);
-    setSelectedSubjects((teacher.profile?.subjects || []).map((s) => Number(s.id)));
+    setSelectedSubjects(
+      (teacher.profile?.subjects || []).map((s) => Number(s.id)),
+    );
     setMaxHours(Number(teacher.profile?.max_hours_per_day ?? 8));
     setSchedules([]);
     setForm((f) => ({ ...f, subject_id: "", student_id: "" }));
@@ -102,45 +116,24 @@ const TeacherAllocation = () => {
     }
   }, [step, selectedTeacher?.profile?.id]);
 
-  const subjectHours = useMemo(() => {
-    return selectedSubjects.reduce((sum, sid) => {
-      const sub = subjects.find((s) => Number(s.id) === Number(sid));
-      const hours = sub ? Number(sub.default_hours ?? sub.hours ?? 0) : 0;
-      return sum + hours;
-    }, 0);
-  }, [selectedSubjects, subjects]);
+  const daysOfWeek = [
+    "Monday",
+    "Tuesday",
+    "Wednesday",
+    "Thursday",
+    "Friday",
+    "Saturday",
+    "Sunday",
+  ];
 
-  const filteredTeachers = useMemo(() => {
-    const q = teacherQuery.trim().toLowerCase();
-    if (!q) return teachers;
-    return teachers.filter((t) => {
-      const name = `${t.profile?.first_name || ""} ${t.profile?.last_name || ""}`.toLowerCase();
-      const code = String(t.profile?.teacher_code || "").toLowerCase();
-      const username = String(t.username || "").toLowerCase();
-      return name.includes(q) || code.includes(q) || username.includes(q);
-    });
-  }, [teacherQuery, teachers]);
-
-  const canGoStudent = Boolean(selectedTeacher);
-  const canGoSubject = Boolean(form.student_id);
-  const canGoDay = Boolean(form.subject_id);
-  const canGoTime = Boolean(form.day_of_week);
-  const isScheduleComplete = Boolean(
-    selectedTeacher?.profile?.id &&
-      form.day_of_week &&
-      form.start_time &&
-      form.end_time &&
-      form.subject_id &&
-      form.student_id &&
-      form.start_time < form.end_time,
-  );
-
-  const scheduledMinutesForSelectedDay = useMemo(() => {
-    if (!schedules || !form?.day_of_week) return 0;
-    const parts = schedules.filter((s) => s.day_of_week === form.day_of_week);
+  const getScheduledMinutesForDay = (day) => {
+    if (!schedules || !day) return 0;
+    const parts = schedules.filter((s) => s.day_of_week === day);
     const toMin = (t) => {
       if (!t) return 0;
-      const p = String(t).split(":").map((x) => Number(x));
+      const p = String(t)
+        .split(":")
+        .map((x) => Number(x));
       if (p.length >= 2) return p[0] * 60 + p[1];
       return 0;
     };
@@ -149,14 +142,66 @@ const TeacherAllocation = () => {
       const b = toMin(s.end_time);
       return sum + Math.max(0, b - a);
     }, 0);
-  }, [schedules, form.day_of_week]);
+  };
 
-  const remainingMinutesForSelectedDay = Math.max(0, Number(maxHours || 8) * 60 - scheduledMinutesForSelectedDay);
+  const _subjectHours = useMemo(() => {
+    return selectedSubjects.reduce((sum, sid) => {
+      const sub = subjects.find((s) => Number(s.id) === Number(sid));
+      const hours = sub ? Number(sub.default_hours ?? sub.hours ?? 0) : 0;
+      return sum + hours;
+    }, 0);
+  }, [selectedSubjects, subjects]);
+
+  const _filteredTeachers = useMemo(() => {
+    const q = teacherQuery.trim().toLowerCase();
+    if (!q) return teachers;
+    return teachers.filter((t) => {
+      const name =
+        `${t.profile?.first_name || ""} ${t.profile?.last_name || ""}`.toLowerCase();
+      const code = String(t.profile?.teacher_code || "").toLowerCase();
+      const username = String(t.username || "").toLowerCase();
+      return name.includes(q) || code.includes(q) || username.includes(q);
+    });
+  }, [teacherQuery, teachers]);
+
+  const _canGoStudent = Boolean(selectedTeacher);
+  const _canGoSubject = Boolean(form.student_id);
+  const _canGoDay = Boolean(form.subject_id);
+  const _canGoTime = Boolean(form.days && form.days.length > 0);
+  const isScheduleComplete = Boolean(
+    selectedTeacher?.profile?.id &&
+    form.days &&
+    form.days.length > 0 &&
+    form.start_time &&
+    form.end_time &&
+    form.subject_id &&
+    form.student_id &&
+    form.start_time < form.end_time &&
+    Number(form.weeks) > 0 &&
+    (form.mode === "online" ? form.zoom_id && form.zoom_pass : form.room_name),
+  );
+
+  // remaining minutes computed for the primary selected day (first in `form.days`)
+  const primaryDay =
+    form.days && form.days.length > 0 ? form.days[0] : "Monday";
+  const scheduledMinutesForSelectedDay = useMemo(
+    () => getScheduledMinutesForDay(primaryDay),
+    [schedules, primaryDay],
+  );
+
+  const remainingMinutesForSelectedDay = Math.max(
+    0,
+    Number(maxHours || 8) * 60 - scheduledMinutesForSelectedDay,
+  );
 
   const newSlotMinutes = useMemo(() => {
     if (!form.start_time || !form.end_time) return 0;
-    const p1 = String(form.start_time).split(":").map((x) => Number(x));
-    const p2 = String(form.end_time).split(":").map((x) => Number(x));
+    const p1 = String(form.start_time)
+      .split(":")
+      .map((x) => Number(x));
+    const p2 = String(form.end_time)
+      .split(":")
+      .map((x) => Number(x));
     const a = p1.length >= 2 ? p1[0] * 60 + p1[1] : 0;
     const b = p2.length >= 2 ? p2[0] * 60 + p2[1] : 0;
     return Math.max(0, b - a);
@@ -169,11 +214,12 @@ const TeacherAllocation = () => {
     }
 
     const missing = [];
-    if (!form.day_of_week) missing.push("day");
+    if (!form.days || form.days.length === 0) missing.push("day");
     if (!form.start_time) missing.push("start time");
     if (!form.end_time) missing.push("end time");
     if (!form.subject_id) missing.push("subject");
     if (!form.student_id) missing.push("student");
+    if (!form.weeks || Number(form.weeks) <= 0) missing.push("weeks (period)");
 
     if (missing.length > 0) {
       setMessage({ type: "error", text: `Missing: ${missing.join(", ")}` });
@@ -182,7 +228,9 @@ const TeacherAllocation = () => {
 
     const timeToMinutes = (t) => {
       if (!t) return 0;
-      const parts = String(t).split(":").map((p) => Number(p));
+      const parts = String(t)
+        .split(":")
+        .map((p) => Number(p));
       if (parts.length === 2) return parts[0] * 60 + parts[1];
       if (parts.length >= 3) return parts[0] * 60 + parts[1];
       return 0;
@@ -192,88 +240,106 @@ const TeacherAllocation = () => {
       return;
     }
 
-    const scheduledMinutesForDay = schedules.filter((s) => s.day_of_week === form.day_of_week).reduce((sum, s) => {
-      const a = timeToMinutes(s.start_time);
-      const b = timeToMinutes(s.end_time);
-      return sum + Math.max(0, b - a);
-    }, 0);
-    const newMinutes = Math.max(0, timeToMinutes(form.end_time) - timeToMinutes(form.start_time));
+    const newMinutes = Math.max(
+      0,
+      timeToMinutes(form.end_time) - timeToMinutes(form.start_time),
+    );
     const teacherMaxMinutes = Number(maxHours || 8) * 60;
-    if (scheduledMinutesForDay + newMinutes > teacherMaxMinutes) {
-      setMessage({ type: "error", text: "Exceeds teacher's max hours per day" });
-      return;
+    // ensure for every selected day the teacher has capacity
+    for (const d of form.days) {
+      const scheduledMinutesForDay = getScheduledMinutesForDay(d);
+      if (scheduledMinutesForDay + newMinutes > teacherMaxMinutes) {
+        setMessage({
+          type: "error",
+          text: `Exceeds teacher's max hours on ${d}`,
+        });
+        return;
+      }
     }
 
     const ensureSeconds = (t) => {
       if (!t) return t;
       const parts = String(t).split(":");
-      if (parts.length === 2) return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
+      if (parts.length === 2)
+        return `${parts[0].padStart(2, "0")}:${parts[1].padStart(2, "0")}:00`;
       return t;
     };
 
-    const payload = {
-      teacher_profile_id: selectedTeacher.profile.id,
-      subject_id: Number(form.subject_id),
-      student_id: Number(form.student_id),
-      day_of_week: form.day_of_week,
-      start_time: ensureSeconds(form.start_time),
-      end_time: ensureSeconds(form.end_time),
-    };
-
+    // create schedule entries for each selected day
     setIsSavingSchedule(true);
     setMessage({ type: "info", text: "Saving schedule..." });
     try {
-      setLastRequest(payload);
-      const res = await fetch(
-        "http://localhost/MyPortfolio/academic-scheduler/backend/api/create_weekly_schedule.php",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        },
-      );
-      if (!res.ok) {
-        const text = await res.text();
-        setLastResponse(text);
-        setMessage({ type: "error", text: `Failed to add schedule (HTTP ${res.status})` });
-        return;
-      }
-      const j = await res.json();
-      setLastResponse(j);
-      if (j.success) {
-        setMessage({ type: "success", text: "Weekly schedule added" });
-        const subject = subjects.find((s) => Number(s.id) === Number(form.subject_id));
-        const student = students.find((s) => Number(s.id) === Number(form.student_id));
-        const nextRow = {
-          id: j.id || j.schedule_id || `local-${Date.now()}`,
-          day_of_week: form.day_of_week,
-          start_time: form.start_time,
-          end_time: form.end_time,
-          subject_name: subject?.subject_name || "Subject",
-          student_code: student?.student_code || "",
-          student_first_name: student?.first_name || "",
-          student_last_name: student?.last_name || "",
+      for (const d of form.days) {
+        const payload = {
+          teacher_profile_id: selectedTeacher.profile.id,
+          subject_id: Number(form.subject_id),
+          student_id: Number(form.student_id),
+          day_of_week: d,
+          start_time: ensureSeconds(form.start_time),
+          end_time: ensureSeconds(form.end_time),
+          mode: form.mode,
+          weeks: Number(form.weeks) || 1,
         };
-        setSchedules((prev) => prev.concat(nextRow));
-        setForm((f) => ({ ...f, subject_id: "", student_id: "" }));
-        let got = await loadSchedules(selectedTeacher.profile?.id);
-        if (selectedTeacher?.profile?.id && Array.isArray(got) && got.length === 0) {
-          await new Promise((r) => setTimeout(r, 300));
-          got = await loadSchedules(selectedTeacher.profile?.id);
+        setLastRequest(payload);
+        const res = await fetch(
+          "http://localhost/MyPortfolio/academic-scheduler/backend/api/create_weekly_schedule.php",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          },
+        );
+        if (!res.ok) {
+          const text = await res.text();
+          setLastResponse(text);
+          throw new Error(`Failed to add schedule (HTTP ${res.status})`);
         }
-      } else {
-        const msg = j.message || "Failed to add schedule";
-        // Don't auto-assign subjects here. Instruct admin to assign subjects via Teachers page.
-        if (typeof msg === 'string' && msg.toLowerCase().includes('not assigned')) {
-          setMessage({ type: 'error', text: 'Teacher is not assigned to this subject. Please assign the subject to the teacher in the Teachers page before scheduling.' });
+        const j = await res.json();
+        setLastResponse(j);
+        if (j.success) {
+          const subject = subjects.find(
+            (s) => Number(s.id) === Number(form.subject_id),
+          );
+          const student = students.find(
+            (s) => Number(s.id) === Number(form.student_id),
+          );
+          const nextRow = {
+            id: j.id || j.schedule_id || `local-${Date.now()}`,
+            day_of_week: d,
+            start_time: form.start_time,
+            end_time: form.end_time,
+            subject_name: subject?.subject_name || "Subject",
+            student_code: student?.student_code || "",
+            student_first_name: student?.first_name || "",
+            student_last_name: student?.last_name || "",
+            mode: form.mode,
+            weeks: Number(form.weeks) || 1,
+          };
+          setSchedules((prev) => prev.concat(nextRow));
         } else {
-          setMessage({ type: "error", text: msg });
+          const msg = j.message || "Failed to add schedule";
+          if (
+            typeof msg === "string" &&
+            msg.toLowerCase().includes("not assigned")
+          ) {
+            throw new Error(
+              "Teacher is not assigned to this subject. Please assign the subject to the teacher in the Teachers page before scheduling.",
+            );
+          }
+          throw new Error(msg);
         }
       }
+      // reload schedules
+      await loadSchedules(selectedTeacher.profile?.id);
+      setForm((f) => ({ ...f, subject_id: "", student_id: "" }));
+      setMessage({ type: "success", text: "Weekly schedule(s) added" });
     } catch (err) {
       console.error(err);
       setLastError(err.message || String(err));
-      setMessage({ type: "error", text: "Failed to add schedule" });
+      setMessage({
+        type: "error",
+        text: err.message || "Failed to add schedule",
+      });
     } finally {
       setIsSavingSchedule(false);
     }
@@ -303,7 +369,9 @@ const TeacherAllocation = () => {
         <p className="ta-sub">Schedule sessions for teachers</p>
       </header>
 
-      {message.text && <div className={`ta-message ${message.type}`}>{message.text}</div>}
+      {message.text && (
+        <div className={`ta-message ${message.type}`}>{message.text}</div>
+      )}
 
       <div className="ta-form-single">
         <section className="ta-panel ta-step">
@@ -311,81 +379,289 @@ const TeacherAllocation = () => {
 
           <div className="ta-row">
             <label>Teacher</label>
-            <select value={selectedTeacher?.id || ""} onChange={(e) => {
-              const t = teachers.find(x => String(x.id) === e.target.value);
-              if (t) selectTeacher(t); else { setSelectedTeacher(null); setSchedules([]); }
-            }}>
+            <select
+              value={selectedTeacher?.id || ""}
+              onChange={(e) => {
+                const t = teachers.find((x) => String(x.id) === e.target.value);
+                if (t) selectTeacher(t);
+                else {
+                  setSelectedTeacher(null);
+                  setSchedules([]);
+                }
+              }}
+            >
               <option value="">Select teacher</option>
-              {teachers.map((t) => <option key={t.id} value={t.id}>{t.profile?.first_name} {t.profile?.last_name} - {t.profile?.teacher_code || t.username}</option>)}
-            </select>
-          </div>
-
-          <div className="ta-row">
-            <label>Student</label>
-            <select value={form.student_id} onChange={(e) => setForm((f) => ({ ...f, student_id: e.target.value }))}>
-              <option value="">Select student</option>
-              {students.map((s) => (<option key={s.id} value={s.id}>{s.student_code} - {s.first_name} {s.last_name}</option>))}
-            </select>
-          </div>
-
-          <div className="ta-row">
-            <label>Subject</label>
-            <select value={form.subject_id} onChange={(e) => setForm((f) => ({ ...f, subject_id: e.target.value }))}>
-              <option value="">Select subject</option>
-              {subjects.filter((s) => (selectedTeacher?.profile?.subjects || []).map(ss => Number(ss.id)).includes(Number(s.id))).map((s) => (
-                <option key={s.id} value={s.id}>{s.subject_name}</option>
+              {teachers.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.profile?.first_name} {t.profile?.last_name} -{" "}
+                  {t.profile?.teacher_code || t.username}
+                </option>
               ))}
             </select>
           </div>
 
           <div className="ta-row">
-            <label>Day</label>
-            <select value={form.day_of_week} onChange={(e) => setForm((f) => ({ ...f, day_of_week: e.target.value }))}>
-              {["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"].map((d) => (<option key={d} value={d}>{d}</option>))}
+            <label>Student</label>
+            <select
+              value={form.student_id}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, student_id: e.target.value }))
+              }
+            >
+              <option value="">Select student</option>
+              {students.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.student_code} - {s.first_name} {s.last_name}
+                </option>
+              ))}
             </select>
           </div>
 
           <div className="ta-row">
+            <label>Subject</label>
+            <select
+              value={form.subject_id}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, subject_id: e.target.value }))
+              }
+            >
+              <option value="">Select subject</option>
+              {subjects
+                .filter((s) =>
+                  (selectedTeacher?.profile?.subjects || [])
+                    .map((ss) => Number(ss.id))
+                    .includes(Number(s.id)),
+                )
+                .map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.subject_name}
+                  </option>
+                ))}
+            </select>
+          </div>
+
+          <div className="ta-row">
+            <label>Days</label>
+            <div>
+              {daysOfWeek.map((d) => (
+                <label key={d} style={{ marginRight: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={(form.days || []).includes(d)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((f) => {
+                        const cur = Array.isArray(f.days) ? f.days.slice() : [];
+                        if (checked && !cur.includes(d)) cur.push(d);
+                        if (!checked) {
+                          const idx = cur.indexOf(d);
+                          if (idx >= 0) cur.splice(idx, 1);
+                        }
+                        return { ...f, days: cur };
+                      });
+                    }}
+                  />{" "}
+                  {d}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="ta-row">
+            <label>Mode</label>
+            <select
+              value={form.mode}
+              onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}
+            >
+              <option value="online">Online</option>
+              <option value="f2f">Face to face</option>
+            </select>
+          </div>
+
+          {form.mode === "online" && (
+            <div className="ta-row">
+              <label>Zoom ID</label>
+              <input
+                type="text"
+                value={form.zoom_id}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, zoom_id: e.target.value }))
+                }
+              />
+              <label style={{ marginLeft: 12 }}>Zoom Pass</label>
+              <input
+                type="text"
+                value={form.zoom_pass}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, zoom_pass: e.target.value }))
+                }
+              />
+            </div>
+          )}
+
+          {form.mode === "f2f" && (
+            <div className="ta-row">
+              <label>Room</label>
+              <select
+                value={form.room_name}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, room_name: e.target.value }))
+                }
+              >
+                <option value="Room 101">Room 101</option>
+                <option value="Room 102">Room 102</option>
+                <option value="Room 103">Room 103</option>
+              </select>
+            </div>
+          )}
+
+          <div className="ta-row">
+            <label>Period (weeks)</label>
+            <select
+              value={form.weeks}
+              onChange={(e) => {
+                const v = e.target.value;
+                if (v === "custom") {
+                  setForm((f) => ({ ...f, weeks: "" }));
+                } else {
+                  setForm((f) => ({ ...f, weeks: Number(v) }));
+                }
+              }}
+            >
+              <option value={1}>1 week</option>
+              <option value={3}>3 weeks</option>
+              <option value={24}>24 weeks</option>
+              <option value={"custom"}>Custom</option>
+            </select>
+            {(!form.weeks || String(form.weeks) === "") && (
+              <input
+                type="number"
+                min={1}
+                style={{ marginLeft: 8, width: 100 }}
+                value={form.weeks}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, weeks: Number(e.target.value) }))
+                }
+                placeholder="# weeks"
+              />
+            )}
+          </div>
+
+          <div className="ta-row">
             <label>Start</label>
-            <input type="time" value={form.start_time} onChange={(e) => setForm((f) => ({ ...f, start_time: e.target.value }))} />
+            <input
+              type="time"
+              value={form.start_time}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, start_time: e.target.value }))
+              }
+            />
             <label style={{ marginLeft: 12 }}>End</label>
-            <input type="time" value={form.end_time} onChange={(e) => setForm((f) => ({ ...f, end_time: e.target.value }))} />
+            <input
+              type="time"
+              value={form.end_time}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, end_time: e.target.value }))
+              }
+            />
           </div>
 
           <div className="ta-row ta-hours">
-            Remaining hours today: <strong>{(remainingMinutesForSelectedDay / 60).toFixed(2)}</strong> / {Number(maxHours || 8).toFixed(2)}
+            Remaining hours today:{" "}
+            <strong>{(remainingMinutesForSelectedDay / 60).toFixed(2)}</strong>{" "}
+            / {Number(maxHours || 8).toFixed(2)}
           </div>
 
           <div className="ta-step-actions">
-            <button className="btn" onClick={createSchedule} disabled={!isScheduleComplete || isSavingSchedule || newSlotMinutes > remainingMinutesForSelectedDay || remainingMinutesForSelectedDay <= 0}>{isSavingSchedule ? "Saving..." : "Add Schedule"}</button>
-            <button className="btn ta-btn-outline" onClick={() => { setForm({ day_of_week: "Monday", start_time: "08:00", end_time: "09:00", subject_id: "", student_id: "" }); }}>Clear</button>
+            <button
+              className="btn"
+              onClick={createSchedule}
+              disabled={
+                !isScheduleComplete ||
+                isSavingSchedule ||
+                newSlotMinutes > remainingMinutesForSelectedDay ||
+                remainingMinutesForSelectedDay <= 0
+              }
+            >
+              {isSavingSchedule ? "Saving..." : "Add Schedule"}
+            </button>
+            <button
+              className="btn ta-btn-outline"
+              onClick={() => {
+                setForm(defaultForm);
+              }}
+            >
+              Clear
+            </button>
           </div>
         </section>
 
         <div className="ta-table-wrap">
           <table className="ta-table">
             <thead>
-              <tr><th>Day</th><th>Time</th><th>Subject</th><th>Student</th><th></th></tr>
+              <tr>
+                <th>Day</th>
+                <th>Time</th>
+                <th>Subject</th>
+                <th>Student</th>
+                <th></th>
+              </tr>
             </thead>
             <tbody>
-              {schedules.length === 0 && (<tr><td colSpan={5} className="ta-empty">No schedules yet</td></tr>)}
-              {schedules.map((r) => (<tr key={r.id}><td>{r.day_of_week}</td><td>{r.start_time} - {r.end_time}</td><td>{r.subject_name}</td><td>{r.student_code ? `${r.student_code} - ${r.student_first_name} ${r.student_last_name}` : "-"}</td><td><button className="btn ta-btn-outline" onClick={() => deleteSchedule(r.id)}>Delete</button></td></tr>))}
+              {schedules.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="ta-empty">
+                    No schedules yet
+                  </td>
+                </tr>
+              )}
+              {schedules.map((r) => (
+                <tr key={r.id}>
+                  <td>{r.day_of_week}</td>
+                  <td>
+                    {r.start_time} - {r.end_time}
+                  </td>
+                  <td>{r.subject_name}</td>
+                  <td>
+                    {r.student_code
+                      ? `${r.student_code} - ${r.student_first_name} ${r.student_last_name}`
+                      : "-"}
+                  </td>
+                  <td>
+                    <button
+                      className="btn ta-btn-outline"
+                      onClick={() => deleteSchedule(r.id)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
         {schedules.length > 0 && (
-          <div style={{ display: 'flex', justifyContent: 'center', padding: '0.75rem' }}>
-            <button className="btn" onClick={() => {
-              // clear form and table for entering a new schedule
-              setSelectedTeacher(null);
-              setSchedules([]);
-              setForm({ day_of_week: "Monday", start_time: "08:00", end_time: "09:00", subject_id: "", student_id: "" });
-              setMessage({ type: '', text: '' });
-            }}>Create new</button>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "center",
+              padding: "0.75rem",
+            }}
+          >
+            <button
+              className="btn"
+              onClick={() => {
+                // clear form and table for entering a new schedule
+                setSelectedTeacher(null);
+                setSchedules([]);
+                setForm(defaultForm);
+                setMessage({ type: "", text: "" });
+              }}
+            >
+              Create new
+            </button>
           </div>
         )}
-
-        
       </div>
     </div>
   );

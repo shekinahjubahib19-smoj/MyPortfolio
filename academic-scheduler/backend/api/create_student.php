@@ -28,6 +28,7 @@ try {
     $first_name = trim($data->first_name ?? '');
     $last_name = trim($data->last_name ?? '');
     $current_level = trim($data->current_level ?? '');
+    $email = trim($data->email ?? '');
     $enrollment_status = trim($data->enrollment_status ?? 'Active');
 
     if ($student_code === '' || $first_name === '' || $last_name === '') {
@@ -47,10 +48,21 @@ try {
         exit;
     }
 
-    $query = "INSERT INTO students (student_code, first_name, last_name, current_level, enrollment_status, created_at) VALUES (?, ?, ?, ?, ?, NOW())";
+    // ensure email column exists for older DBs
+    $colCheck = $conn->prepare("SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'email'");
+    if ($colCheck) {
+        $colCheck->execute();
+        $cc = $colCheck->get_result()->fetch_assoc();
+        if (intval($cc['c']) === 0) {
+            $conn->query("ALTER TABLE students ADD COLUMN email VARCHAR(255) DEFAULT NULL");
+        }
+        $colCheck->close();
+    }
+
+    $query = "INSERT INTO students (student_code, first_name, last_name, current_level, enrollment_status, email, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())";
     $stmt = $conn->prepare($query);
     if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
-    $stmt->bind_param('sssss', $student_code, $first_name, $last_name, $current_level, $enrollment_status);
+    $stmt->bind_param('ssssss', $student_code, $first_name, $last_name, $current_level, $enrollment_status, $email);
 
     if ($stmt->execute()) {
         $id = $stmt->insert_id;

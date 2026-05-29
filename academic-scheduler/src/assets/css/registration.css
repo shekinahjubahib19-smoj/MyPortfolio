@@ -69,6 +69,15 @@
   box-sizing: border-box;
 }
 
+/* Remove default focus ring for modal inputs (keeps a clean look) */
+.registration-modal .input-field:focus,
+.registration-modal select.input-field:focus,
+.registration-modal textarea.input-field:focus {
+  outline: none;
+  box-shadow: none;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
 /* Better styled native select: remove default arrow and add custom caret */
 .registration-modal select.input-field {
   appearance: none;

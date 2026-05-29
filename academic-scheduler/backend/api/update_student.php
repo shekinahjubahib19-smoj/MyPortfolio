@@ -28,6 +28,7 @@ try {
     $student_code = trim($data->student_code ?? '');
     $first_name = trim($data->first_name ?? '');
     $last_name = trim($data->last_name ?? '');
+    $email = trim($data->email ?? '');
     $current_level = trim($data->current_level ?? '');
     $enrollment_status = trim($data->enrollment_status ?? 'Active');
 
@@ -65,10 +66,22 @@ try {
         exit;
     }
 
-    $query = "UPDATE students SET student_code = ?, first_name = ?, last_name = ?, current_level = ?, enrollment_status = ? WHERE id = ?";
-    $stmt = $conn->prepare($query);
-    if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
-    $stmt->bind_param('sssssi', $student_code, $first_name, $last_name, $current_level, $enrollment_status, $id);
+        // include email column
+        // ensure column exists (in case running against older DB schema)
+        $colCheck = $conn->prepare("SELECT COUNT(*) AS c FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'students' AND COLUMN_NAME = 'email'");
+        if ($colCheck) {
+            $colCheck->execute();
+            $cc = $colCheck->get_result()->fetch_assoc();
+            if (intval($cc['c']) === 0) {
+                $conn->query("ALTER TABLE students ADD COLUMN email VARCHAR(255) DEFAULT NULL");
+            }
+            $colCheck->close();
+        }
+
+        $query = "UPDATE students SET student_code = ?, first_name = ?, last_name = ?, email = ?, current_level = ?, enrollment_status = ? WHERE id = ?";
+        $stmt = $conn->prepare($query);
+        if (!$stmt) throw new Exception('Prepare failed: ' . $conn->error);
+        $stmt->bind_param('ssssssi', $student_code, $first_name, $last_name, $email, $current_level, $enrollment_status, $id);
 
     if ($stmt->execute()) {
         $stray = ob_get_clean();

@@ -117,6 +117,7 @@ const Students = () => {
                   }}
                 >
                   <th style={{ padding: "0.5rem 0.75rem" }}>Student Code</th>
+                  <th style={{ padding: "0.5rem 0.75rem" }}>Email</th>
                   <th style={{ padding: "0.5rem 0.75rem" }}>First name</th>
                   <th style={{ padding: "0.5rem 0.75rem" }}>Last name</th>
                   <th style={{ padding: "0.5rem 0.75rem" }}>Current level</th>
@@ -141,10 +142,13 @@ const Students = () => {
                         borderBottom: "1px solid rgba(255,255,255,0.03)",
                         cursor: "pointer",
                       }}
-                       onClick={() => openProfile(s, !isAdmin)}
+                      onClick={() => openProfile(s, !isAdmin)}
                     >
                       <td style={{ padding: "0.5rem 0.75rem" }}>
                         {s.student_code ?? "-"}
+                      </td>
+                      <td style={{ padding: "0.5rem 0.75rem" }}>
+                        {s.email || "-"}
                       </td>
                       <td style={{ padding: "0.5rem 0.75rem" }}>
                         {s.first_name ?? ""}

@@ -119,6 +119,7 @@ const TeachersPage = () => {
                   }}
                 >
                   <th style={{ padding: "0.5rem 0.75rem" }}>Teacher Code</th>
+                  <th style={{ padding: "0.5rem 0.75rem" }}>Email</th>
                   <th style={{ padding: "0.5rem 0.75rem" }}>Full name</th>
                   <th style={{ padding: "0.5rem 0.75rem" }}>
                     Availability (today)
@@ -152,6 +153,9 @@ const TeachersPage = () => {
                     >
                       <td style={{ padding: "0.5rem 0.75rem" }}>
                         {t.profile?.teacher_code ?? "-"}
+                      </td>
+                      <td style={{ padding: "0.5rem 0.75rem" }}>
+                        {t.profile?.teacher_email || t.email || "-"}
                       </td>
                       <td style={{ padding: "0.5rem 0.75rem" }}>
                         {t.profile?.first_name ?? ""}{" "}
