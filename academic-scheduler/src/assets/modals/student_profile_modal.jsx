@@ -22,14 +22,18 @@ const StudentProfileModal = ({
   const { isAdmin } = useAuth();
 
   useEffect(() => {
-    setForm({
-      studentCode: student?.student_code || "",
-      firstName: student?.first_name || "",
-      lastName: student?.last_name || "",
-      level: student?.current_level || "",
-      email: student?.email || "",
-      status: student?.enrollment_status || "Active",
-    });
+    // schedule form populate to avoid synchronous setState in effect
+    const id = setTimeout(() => {
+      setForm({
+        studentCode: student?.student_code || "",
+        firstName: student?.first_name || "",
+        lastName: student?.last_name || "",
+        level: student?.current_level || "",
+        email: student?.email || "",
+        status: student?.enrollment_status || "Active",
+      });
+    }, 0);
+    return () => clearTimeout(id);
   }, [student, isOpen]);
 
   if (!isOpen) return null;

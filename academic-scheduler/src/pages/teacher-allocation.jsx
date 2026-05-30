@@ -1,6 +1,8 @@
 import React, { useEffect, useMemo, useState } from "react";
 import "../assets/css/teacher-allocation.css";
 
+import Modal from "../components/Modal";
+
 const TeacherAllocation = () => {
   const [teachers, setTeachers] = useState([]);
   const [subjects, setSubjects] = useState([]);
@@ -17,24 +19,24 @@ const TeacherAllocation = () => {
   const [_lastResponse, setLastResponse] = useState(null);
   const [_lastError, setLastError] = useState(null);
   const defaultForm = {
-    // `days` allows selecting one or more weekdays for the session
     days: ["Monday"],
     start_time: "08:00",
     end_time: "09:00",
     subject_id: "",
     student_id: "",
-    // class mode: 'online' | 'f2f'
     mode: "online",
-    // number of weeks this schedule repeats for
     weeks: 1,
-    // online fields
     zoom_id: "",
     zoom_pass: "",
-    // room for face-to-face sessions
     room_name: "Room 101",
+    start_date: new Date().toISOString().slice(0, 10),
   };
 
   const [form, setForm] = useState(defaultForm);
+
+  // modal states
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+  const [showScheduleModal, setShowScheduleModal] = useState(false);
 
   // auto-hide success messages after 3 seconds
   React.useEffect(() => {
@@ -126,6 +128,35 @@ const TeacherAllocation = () => {
     "Sunday",
   ];
 
+  const dayNameToIndex = {
+    Sunday: 0,
+    Monday: 1,
+    Tuesday: 2,
+    Wednesday: 3,
+    Thursday: 4,
+    Friday: 5,
+    Saturday: 6,
+  };
+
+  const getNextDateForDay = (startDateStr, dayName) => {
+    if (!startDateStr) return null;
+    const sd = new Date(startDateStr);
+    if (isNaN(sd)) return null;
+    const target = dayNameToIndex[dayName];
+    const startDay = sd.getDay();
+    const delta = (target - startDay + 7) % 7;
+    const d = new Date(sd);
+    d.setDate(d.getDate() + delta);
+    return d.toISOString().slice(0, 10);
+  };
+
+  const addDaysISO = (isoDateStr, days) => {
+    const d = new Date(isoDateStr);
+    if (isNaN(d)) return null;
+    d.setDate(d.getDate() + days);
+    return d.toISOString().slice(0, 10);
+  };
+
   const getScheduledMinutesForDay = (day) => {
     if (!schedules || !day) return 0;
     const parts = schedules.filter((s) => s.day_of_week === day);
@@ -181,12 +212,11 @@ const TeacherAllocation = () => {
     (form.mode === "online" ? form.zoom_id && form.zoom_pass : form.room_name),
   );
 
-  // remaining minutes computed for the primary selected day (first in `form.days`)
   const primaryDay =
     form.days && form.days.length > 0 ? form.days[0] : "Monday";
   const scheduledMinutesForSelectedDay = useMemo(
     () => getScheduledMinutesForDay(primaryDay),
-    [schedules, primaryDay],
+    [schedules, primaryDay, getScheduledMinutesForDay],
   );
 
   const remainingMinutesForSelectedDay = Math.max(
@@ -270,6 +300,14 @@ const TeacherAllocation = () => {
     setMessage({ type: "info", text: "Saving schedule..." });
     try {
       for (const d of form.days) {
+        // compute the first occurrence of this weekday on/after the chosen start_date
+        const perDayStart = form.start_date
+          ? getNextDateForDay(form.start_date, d)
+          : null;
+        const perDayEnd = perDayStart
+          ? addDaysISO(perDayStart, (Number(form.weeks) - 1) * 7)
+          : null;
+
         const payload = {
           teacher_profile_id: selectedTeacher.profile.id,
           subject_id: Number(form.subject_id),
@@ -279,7 +317,16 @@ const TeacherAllocation = () => {
           end_time: ensureSeconds(form.end_time),
           mode: form.mode,
           weeks: Number(form.weeks) || 1,
+          start_date: perDayStart,
+          end_date: perDayEnd,
         };
+        // include mode-specific fields so DB constraints are satisfied
+        if (form.mode === "online") {
+          payload.zoom_id = form.zoom_id || "";
+          payload.zoom_pass = form.zoom_pass || "";
+        } else {
+          payload.room_name = form.room_name || "";
+        }
         setLastRequest(payload);
         const res = await fetch(
           "http://localhost/MyPortfolio/academic-scheduler/backend/api/create_weekly_schedule.php",
@@ -308,6 +355,8 @@ const TeacherAllocation = () => {
             day_of_week: d,
             start_time: form.start_time,
             end_time: form.end_time,
+            start_date: perDayStart,
+            end_date: perDayEnd,
             subject_name: subject?.subject_name || "Subject",
             student_code: student?.student_code || "",
             student_first_name: student?.first_name || "",
@@ -333,6 +382,8 @@ const TeacherAllocation = () => {
       await loadSchedules(selectedTeacher.profile?.id);
       setForm((f) => ({ ...f, subject_id: "", student_id: "" }));
       setMessage({ type: "success", text: "Weekly schedule(s) added" });
+      // open success modal
+      setShowSuccessModal(true);
     } catch (err) {
       console.error(err);
       setLastError(err.message || String(err));
@@ -441,33 +492,6 @@ const TeacherAllocation = () => {
           </div>
 
           <div className="ta-row">
-            <label>Days</label>
-            <div>
-              {daysOfWeek.map((d) => (
-                <label key={d} style={{ marginRight: 8 }}>
-                  <input
-                    type="checkbox"
-                    checked={(form.days || []).includes(d)}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setForm((f) => {
-                        const cur = Array.isArray(f.days) ? f.days.slice() : [];
-                        if (checked && !cur.includes(d)) cur.push(d);
-                        if (!checked) {
-                          const idx = cur.indexOf(d);
-                          if (idx >= 0) cur.splice(idx, 1);
-                        }
-                        return { ...f, days: cur };
-                      });
-                    }}
-                  />{" "}
-                  {d}
-                </label>
-              ))}
-            </div>
-          </div>
-
-          <div className="ta-row">
             <label>Mode</label>
             <select
               value={form.mode}
@@ -548,6 +572,57 @@ const TeacherAllocation = () => {
           </div>
 
           <div className="ta-row">
+            <label>Start Date</label>
+            <input
+              type="date"
+              value={form.start_date}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, start_date: e.target.value }))
+              }
+            />
+            <label style={{ marginLeft: 12 }}>End Date</label>
+            <input
+              type="date"
+              value={(() => {
+                if (!form.start_date || !form.weeks) return "";
+                const ed = addDaysISO(
+                  form.start_date,
+                  Number(form.weeks) * 7 - 1,
+                );
+                return ed || "";
+              })()}
+              readOnly
+            />
+          </div>
+
+          <div className="ta-row">
+            <label>Days</label>
+            <div>
+              {daysOfWeek.map((d) => (
+                <label key={d} style={{ marginRight: 8 }}>
+                  <input
+                    type="checkbox"
+                    checked={(form.days || []).includes(d)}
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      setForm((f) => {
+                        const cur = Array.isArray(f.days) ? f.days.slice() : [];
+                        if (checked && !cur.includes(d)) cur.push(d);
+                        if (!checked) {
+                          const idx = cur.indexOf(d);
+                          if (idx >= 0) cur.splice(idx, 1);
+                        }
+                        return { ...f, days: cur };
+                      });
+                    }}
+                  />{" "}
+                  {d}
+                </label>
+              ))}
+            </div>
+          </div>
+
+          <div className="ta-row">
             <label>Start</label>
             <input
               type="time"
@@ -596,71 +671,125 @@ const TeacherAllocation = () => {
           </div>
         </section>
 
-        <div className="ta-table-wrap">
-          <table className="ta-table">
-            <thead>
-              <tr>
-                <th>Day</th>
-                <th>Time</th>
-                <th>Subject</th>
-                <th>Student</th>
-                <th></th>
-              </tr>
-            </thead>
-            <tbody>
-              {schedules.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="ta-empty">
-                    No schedules yet
-                  </td>
-                </tr>
-              )}
-              {schedules.map((r) => (
-                <tr key={r.id}>
-                  <td>{r.day_of_week}</td>
-                  <td>
-                    {r.start_time} - {r.end_time}
-                  </td>
-                  <td>{r.subject_name}</td>
-                  <td>
-                    {r.student_code
-                      ? `${r.student_code} - ${r.student_first_name} ${r.student_last_name}`
-                      : "-"}
-                  </td>
-                  <td>
-                    <button
-                      className="btn ta-btn-outline"
-                      onClick={() => deleteSchedule(r.id)}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {schedules.length > 0 && (
-          <div
-            style={{
-              display: "flex",
-              justifyContent: "center",
-              padding: "0.75rem",
-            }}
+        {/* View table button removed — schedule modal can be opened from Master Scheduler */}
+
+        {/* Success confirmation modal */}
+        {showSuccessModal && (
+          <Modal
+            onClose={() => setShowSuccessModal(false)}
+            dialogStyle={{ width: "min(520px, 90%)", padding: 16 }}
           >
-            <button
-              className="btn"
-              onClick={() => {
-                // clear form and table for entering a new schedule
-                setSelectedTeacher(null);
-                setSchedules([]);
-                setForm(defaultForm);
-                setMessage({ type: "", text: "" });
-              }}
-            >
-              Create new
-            </button>
-          </div>
+            <div style={{ padding: 4 }}>
+              <h3 style={{ marginTop: 0 }}>Schedule added</h3>
+              <p>
+                Weekly schedule(s) were successfully added to the teacher's
+                schedule.
+              </p>
+              <div
+                style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}
+              >
+                <button
+                  className="btn"
+                  onClick={() => setShowSuccessModal(false)}
+                >
+                  OK
+                </button>
+              </div>
+            </div>
+          </Modal>
+        )}
+
+        {/* Schedules modal (table) */}
+        {showScheduleModal && (
+          <Modal onClose={() => setShowScheduleModal(false)}>
+            <div style={{ padding: 12 }}>
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 12,
+                }}
+              >
+                <h3 style={{ margin: 0 }}>Weekly Schedules</h3>
+                <div>
+                  <button
+                    className="btn ta-btn-outline"
+                    onClick={() => setShowScheduleModal(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+              </div>
+
+              <table className="ta-table" style={{ width: "100%" }}>
+                <thead>
+                  <tr>
+                    <th>Day</th>
+                    <th>Time</th>
+                    <th>Subject</th>
+                    <th>Student</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {schedules.length === 0 && (
+                    <tr>
+                      <td colSpan={5} className="ta-empty">
+                        No schedules yet
+                      </td>
+                    </tr>
+                  )}
+                  {schedules.map((r) => (
+                    <tr key={r.id}>
+                      <td>{r.day_of_week}</td>
+                      <td>
+                        {r.start_time} - {r.end_time}
+                      </td>
+                      <td>{r.subject_name}</td>
+                      <td>
+                        {r.student_code
+                          ? `${r.student_code} - ${r.student_first_name} ${r.student_last_name}`
+                          : "-"}
+                      </td>
+                      <td>
+                        <button
+                          className="btn ta-btn-outline"
+                          onClick={() => deleteSchedule(r.id)}
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+
+              {schedules.length > 0 && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "center",
+                    padding: "0.75rem",
+                  }}
+                >
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      // clear form and table for entering a new schedule
+                      setSelectedTeacher(null);
+                      setSchedules([]);
+                      setForm(defaultForm);
+                      setMessage({ type: "", text: "" });
+                      setShowScheduleModal(false);
+                    }}
+                  >
+                    Create new
+                  </button>
+                </div>
+              )}
+            </div>
+          </Modal>
         )}
       </div>
     </div>

@@ -31,7 +31,7 @@ import MasterScheduler from "./pages/master-scheduler";
 import TeacherAllocation from "./pages/teacher-allocation";
 import SubjectList from "./pages/subject-list";
 import Teachers from "./pages/teachers";
-import SetUpProfile from "./pages/set-up-profile";
+import Profile from "./pages/profile";
 import Students from "./pages/students";
 import ChangePassModal from "./assets/modals/change-pass";
 import "./assets/css/landing.css";
@@ -94,7 +94,7 @@ function AppInner() {
           (user.role === "TEACHER" || user.role === "ADMIN") &&
           !user.is_profile_complete
         ) {
-          window.location.hash = "#/set-up-profile";
+          window.location.hash = "#/profile";
         } else {
           window.location.hash = "#/dashboard";
         }
@@ -111,9 +111,9 @@ function AppInner() {
         user &&
         (user.role === "TEACHER" || user.role === "ADMIN") &&
         !user.is_profile_complete &&
-        current !== "set-up-profile"
+        current !== "profile"
       ) {
-        window.location.hash = "#/set-up-profile";
+        window.location.hash = "#/profile";
       }
     } catch {
       // ignore - window may be unavailable in some environments
@@ -187,13 +187,17 @@ function AppInner() {
               case "master-scheduler":
                 return <MasterScheduler />;
               case "teacher-allocation":
-                return <TeacherAllocation />;
+                // Only ADMIN may access teacher allocation
+                if (user?.role === "ADMIN") return <TeacherAllocation />;
+                return <Dashboard />;
               case "teachers":
-                return <Teachers />;
+                // Only ADMIN may access teachers list
+                if (user?.role === "ADMIN") return <Teachers />;
+                return <Dashboard />;
               case "subjects":
                 return <SubjectList />;
-              case "set-up-profile":
-                return <SetUpProfile />;
+              case "profile":
+                return <Profile />;
               case "dashboard":
               case "":
               default:

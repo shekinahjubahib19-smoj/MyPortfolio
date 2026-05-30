@@ -54,6 +54,18 @@ CREATE TABLE teacher_profiles (
   CONSTRAINT fk_teacher_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
 
+-- Admin profiles: store admin-specific minimal profile data
+CREATE TABLE admin_profile (
+  id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT NOT NULL UNIQUE,
+  admin_code VARCHAR(64) DEFAULT NULL,
+  first_name VARCHAR(50) DEFAULT NULL,
+  last_name VARCHAR(50) DEFAULT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  updated_at TIMESTAMP NULL DEFAULT NULL ON UPDATE CURRENT_TIMESTAMP,
+  CONSTRAINT fk_admin_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
 -- 5. Many-to-many: which subjects each teacher can teach
 CREATE TABLE teacher_subjects (
   id INT AUTO_INCREMENT PRIMARY KEY,
@@ -100,6 +112,10 @@ CREATE TABLE weekly_schedules (
   -- Room management (used when mode = 'f2f')
   room_id INT DEFAULT NULL,
   room_name VARCHAR(50) DEFAULT 'TBA',
+  -- Start and end dates for the repeating schedule. The end date is calculated
+  -- as the date of the first occurrence plus (weeks - 1) * 7 days.
+  start_date DATE DEFAULT NULL,
+  end_date DATE DEFAULT NULL,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   CONSTRAINT fk_ws_teacher FOREIGN KEY (teacher_profile_id) REFERENCES teacher_profiles(id) ON DELETE CASCADE,
   CONSTRAINT fk_ws_subject FOREIGN KEY (subject_id) REFERENCES subjects(id) ON DELETE CASCADE,

@@ -101,39 +101,46 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
           <span className="sidebar-label">Master Scheduler</span>
         </a>
 
-        <a
-          href="#/teacher-allocation"
-          className={`sidebar-link ${isActive("teacher-allocation") ? "is-active" : ""}`}
-        >
-          <span className="sidebar-icon" aria-hidden="true">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+        {/* Admin-only links: show only for ADMIN users */}
+        {user?.role === "ADMIN" && (
+          <>
+            <a
+              href="#/teacher-allocation"
+              className={`sidebar-link ${isActive("teacher-allocation") ? "is-active" : ""}`}
             >
-              <circle cx="12" cy="8" r="3" />
-              <path d="M5 20c1.5-4 6-6 7-6s5.5 2 7 6" />
-            </svg>
-          </span>
-          <span className="sidebar-label">Teacher Allocation</span>
-        </a>
+              <span className="sidebar-icon" aria-hidden="true">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <circle cx="12" cy="8" r="3" />
+                  <path d="M5 20c1.5-4 6-6 7-6s5.5 2 7 6" />
+                </svg>
+              </span>
+              <span className="sidebar-label">Teacher Allocation</span>
+            </a>
 
-        <a
-          href="#/teachers"
-          className={`sidebar-link ${isActive("teachers") ? "is-active" : ""}`}
-        >
-          <span className="sidebar-icon" aria-hidden="true">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
+            <a
+              href="#/teachers"
+              className={`sidebar-link ${isActive("teachers") ? "is-active" : ""}`}
             >
-              <circle cx="12" cy="7" r="3" />
-              <path d="M4 21c2-4 6-6 8-6s6 2 8 6" />
-            </svg>
-          </span>
-          <span className="sidebar-label">Teachers</span>
-        </a>
+              <span className="sidebar-icon" aria-hidden="true">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                >
+                  <circle cx="12" cy="7" r="3" />
+                  <path d="M4 21c2-4 6-6 8-6s6 2 8 6" />
+                </svg>
+              </span>
+              <span className="sidebar-label">Teachers</span>
+            </a>
+          </>
+        )}
+
+        {/* Hidden: Student Assignments, Distribution, Room Management (archived) */}
 
         <a
           href="#/subjects"
@@ -169,8 +176,6 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
           <span className="sidebar-label">Students</span>
         </a>
 
-        {/* Hidden: Student Assignments, Distribution, Room Management (archived) */}
-
         {user?.role === "ADMIN" && (
           <a
             href="#/users"
@@ -187,6 +192,26 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
               </svg>
             </span>
             <span className="sidebar-label">User Management</span>
+          </a>
+        )}
+
+        {/* Profile link: last nav row for all authenticated users */}
+        {isAuthenticated && (
+          <a
+            href="#/profile"
+            className={`sidebar-link ${isActive("profile") ? "is-active" : ""}`}
+          >
+            <span className="sidebar-icon" aria-hidden="true">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 24 24"
+                fill="currentColor"
+              >
+                <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" />
+                <path d="M3 20a9 9 0 0118 0H3z" />
+              </svg>
+            </span>
+            <span className="sidebar-label">Profile</span>
           </a>
         )}
       </nav>

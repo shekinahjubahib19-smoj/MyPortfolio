@@ -6,6 +6,7 @@ const TeacherProfileModal = ({
   onClose,
   user,
   onSaved,
+  onRequestRefresh,
   readOnly = false,
 }) => {
   const [form, setForm] = useState(() => {
@@ -157,6 +158,14 @@ const TeacherProfileModal = ({
         }
         setEditing(false);
         if (onSaved) onSaved(json.profile);
+        // also request a silent refresh if provided (keeps UI up-to-date)
+        if (typeof onRequestRefresh === "function") {
+          try {
+            onRequestRefresh();
+          } catch (e) {
+            /* ignore */
+          }
+        }
       } else {
         setMessage(json.message || "Save failed");
       }
@@ -260,7 +269,16 @@ const TeacherProfileModal = ({
                 gap: "0.75rem",
               }}
             >
-              <button className="btn secondary" onClick={onClose}>
+              <button
+                className="btn secondary"
+                onClick={() => {
+                  if (typeof onRequestRefresh === "function")
+                    try {
+                      onRequestRefresh();
+                    } catch (e) {}
+                  onClose();
+                }}
+              >
                 Close
               </button>
             </div>

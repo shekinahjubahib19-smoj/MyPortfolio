@@ -25,16 +25,17 @@ try {
             'profile' => null,
         ];
 
-        // load profile for any user role
-        $stmt = $conn->prepare("SELECT id, teacher_code, teacher_email, first_name, last_name, max_hours_per_day, total_rendered_hours, day_off FROM teacher_profiles WHERE user_id = ? LIMIT 1");
-        if ($stmt) {
-            $stmt->bind_param('i', $r['id']);
-            $stmt->execute();
-            $pr = $stmt->get_result()->fetch_assoc();
-            if ($pr) {
-                $subjects = [];
-                if (strtoupper($r['role']) === 'TEACHER') {
-                    // load subjects for teachers only
+        // load profile depending on role
+        $role = strtoupper($r['role']);
+        if ($role === 'TEACHER') {
+            $stmt = $conn->prepare("SELECT id, teacher_code, teacher_email, first_name, last_name, max_hours_per_day, total_rendered_hours, day_off FROM teacher_profiles WHERE user_id = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param('i', $r['id']);
+                $stmt->execute();
+                $pr = $stmt->get_result()->fetch_assoc();
+                if ($pr) {
+                    $subjects = [];
+                    // load subjects for teachers
                     $subStmt = $conn->prepare("SELECT s.id, s.subject_name, s.subject_code, s.default_hours FROM teacher_subjects ts JOIN subjects s ON ts.subject_id = s.id WHERE ts.teacher_profile_id = ? ORDER BY s.subject_name");
                     if ($subStmt) {
                         $subStmt->bind_param('i', $pr['id']);
@@ -50,21 +51,40 @@ try {
                         }
                         $subStmt->close();
                     }
-                }
 
-                $user['profile'] = [
-                    'id' => $pr['id'],
-                    'teacher_code' => $pr['teacher_code'],
-                    'teacher_email' => $pr['teacher_email'] ?? null,
-                    'first_name' => $pr['first_name'],
-                    'last_name' => $pr['last_name'],
-                    'max_hours_per_day' => $pr['max_hours_per_day'],
-                    'total_rendered_hours' => $pr['total_rendered_hours'],
-                    'day_off' => $pr['day_off'] ?? null,
-                    'subjects' => $subjects,
-                ];
+                    $user['profile'] = [
+                        'id' => $pr['id'],
+                        'teacher_code' => $pr['teacher_code'],
+                        'teacher_email' => $pr['teacher_email'] ?? null,
+                        'first_name' => $pr['first_name'],
+                        'last_name' => $pr['last_name'],
+                        'max_hours_per_day' => $pr['max_hours_per_day'],
+                        'total_rendered_hours' => $pr['total_rendered_hours'],
+                        'day_off' => $pr['day_off'] ?? null,
+                        'subjects' => $subjects,
+                    ];
+                }
+                $stmt->close();
             }
-            $stmt->close();
+        } elseif ($role === 'ADMIN') {
+            // load admin profile record
+            $stmt = $conn->prepare("SELECT id, admin_code, first_name, last_name, created_at, updated_at FROM admin_profile WHERE user_id = ? LIMIT 1");
+            if ($stmt) {
+                $stmt->bind_param('i', $r['id']);
+                $stmt->execute();
+                $apr = $stmt->get_result()->fetch_assoc();
+                if ($apr) {
+                    $user['profile'] = [
+                        'id' => $apr['id'],
+                        'admin_code' => $apr['admin_code'],
+                        'first_name' => $apr['first_name'],
+                        'last_name' => $apr['last_name'],
+                        'created_at' => $apr['created_at'],
+                        'updated_at' => $apr['updated_at'],
+                    ];
+                }
+                $stmt->close();
+            }
         }
 
         $rows[] = $user;
