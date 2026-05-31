@@ -9,14 +9,24 @@ const StudentProfileModal = ({
   onSaved,
   readOnly = false,
 }) => {
+  const capitalizeName = (v) =>
+    v
+      ? v
+          .split(" ")
+          .map((p) =>
+            p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : "",
+          )
+          .join(" ")
+      : "";
   const [form, setForm] = useState(() => ({
     studentCode: student?.student_code || "",
-    firstName: student?.first_name || "",
-    lastName: student?.last_name || "",
+    firstName: capitalizeName(student?.first_name || ""),
+    lastName: capitalizeName(student?.last_name || ""),
     level: student?.current_level || "",
     email: student?.email || "",
     status: student?.enrollment_status || "Active",
   }));
+
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
   const { isAdmin } = useAuth();
@@ -26,8 +36,8 @@ const StudentProfileModal = ({
     const id = setTimeout(() => {
       setForm({
         studentCode: student?.student_code || "",
-        firstName: student?.first_name || "",
-        lastName: student?.last_name || "",
+        firstName: capitalizeName(student?.first_name || ""),
+        lastName: capitalizeName(student?.last_name || ""),
         level: student?.current_level || "",
         email: student?.email || "",
         status: student?.enrollment_status || "Active",
@@ -146,7 +156,10 @@ const StudentProfileModal = ({
             className="input-field"
             value={form.firstName}
             onChange={(e) =>
-              setForm((f) => ({ ...f, firstName: e.target.value }))
+              setForm((f) => ({
+                ...f,
+                firstName: capitalizeName(e.target.value),
+              }))
             }
             readOnly={readOnly}
           />
@@ -155,7 +168,10 @@ const StudentProfileModal = ({
             className="input-field"
             value={form.lastName}
             onChange={(e) =>
-              setForm((f) => ({ ...f, lastName: e.target.value }))
+              setForm((f) => ({
+                ...f,
+                lastName: capitalizeName(e.target.value),
+              }))
             }
             readOnly={readOnly}
           />

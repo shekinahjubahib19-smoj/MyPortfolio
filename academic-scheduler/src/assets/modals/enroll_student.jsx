@@ -1,14 +1,25 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../css/registration.css";
 
 const EnrollStudent = ({ isOpen, onClose, onSaved, initialData }) => {
+  const capitalizeName = (v) =>
+    v
+      ? v
+          .split(" ")
+          .map((p) =>
+            p ? p.charAt(0).toUpperCase() + p.slice(1).toLowerCase() : "",
+          )
+          .join(" ")
+      : "";
   const [studentCode, setStudentCode] = useState(
     () => initialData?.student_code || "",
   );
-  const [firstName, setFirstName] = useState(
-    () => initialData?.first_name || "",
+  const [firstName, setFirstName] = useState(() =>
+    capitalizeName(initialData?.first_name || ""),
   );
-  const [lastName, setLastName] = useState(() => initialData?.last_name || "");
+  const [lastName, setLastName] = useState(() =>
+    capitalizeName(initialData?.last_name || ""),
+  );
   const [level, setLevel] = useState(
     () => initialData?.current_level || "Level 1",
   );
@@ -18,10 +29,19 @@ const EnrollStudent = ({ isOpen, onClose, onSaved, initialData }) => {
   );
   const [working, setWorking] = useState(false);
   const [message, setMessage] = useState("");
+  const stop = (e) => e.stopPropagation();
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setStudentCode(initialData?.student_code || "");
+    setFirstName(capitalizeName(initialData?.first_name || ""));
+    setLastName(capitalizeName(initialData?.last_name || ""));
+    setLevel(initialData?.current_level || "Level 1");
+    setEmail(initialData?.email || "");
+    setStatus(initialData?.enrollment_status || "Active");
+  }, [isOpen, initialData]);
 
   if (!isOpen) return null;
-
-  const stop = (e) => e.stopPropagation();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -101,13 +121,13 @@ const EnrollStudent = ({ isOpen, onClose, onSaved, initialData }) => {
           <input
             className="input-field"
             value={firstName}
-            onChange={(e) => setFirstName(e.target.value)}
+            onChange={(e) => setFirstName(capitalizeName(e.target.value))}
           />
           <label>Last name</label>
           <input
             className="input-field"
             value={lastName}
-            onChange={(e) => setLastName(e.target.value)}
+            onChange={(e) => setLastName(capitalizeName(e.target.value))}
           />
           <label>Level</label>
           <select

@@ -9,6 +9,9 @@ const MasterScheduler = () => {
   const [teachers, setTeachers] = useState([]);
   const [students, setStudents] = useState([]);
   const [selectedId, setSelectedId] = useState("");
+  const [entityQuery, setEntityQuery] = useState("");
+  const [suggestionsVisible, setSuggestionsVisible] = useState(false);
+  const [filteredEntities, setFilteredEntities] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [displayMode, setDisplayMode] = useState("monthly"); // monthly | weekly
@@ -23,7 +26,13 @@ const MasterScheduler = () => {
     return last.toISOString().slice(0, 10);
   });
 
-  const [weekStartMonday, setWeekStartMonday] = useState(true);
+  const weekStartMonday = false;
+
+  // Visible month for the monthly calendar header/navigation
+  const [visibleMonth, setVisibleMonth] = useState(() => {
+    const d = new Date();
+    return new Date(d.getFullYear(), d.getMonth(), 1);
+  });
 
   const parseYMD = (s) => (s ? new Date(s + "T00:00:00") : null);
 
@@ -52,16 +61,50 @@ const MasterScheduler = () => {
     return addDays(dt, diff);
   };
 
+  const startOfMonth = (d) => new Date(d.getFullYear(), d.getMonth(), 1);
+  const endOfMonth = (d) => new Date(d.getFullYear(), d.getMonth() + 1, 0);
+  const addMonths = (d, months) => {
+    const x = new Date(d);
+    x.setMonth(x.getMonth() + months);
+    return x;
+  };
+
   const mapSchedulesToDates = (schedulesArr, from, to) => {
     if (!from || !to) return [];
-    const dates = getDatesInRange(new Date(from), new Date(to));
+    const start = new Date(from);
+    const end = new Date(to);
+    const dates = getDatesInRange(start, end);
+
     const map = dates.map((dt) => {
       const dayName = dt.toLocaleDateString(undefined, { weekday: "long" });
-      const entries = (schedulesArr || []).filter(
-        (s) => s.day_of_week === dayName,
-      );
+
+      const entries = (schedulesArr || []).filter((s) => {
+        // match weekday first
+        if (s.day_of_week !== dayName) return false;
+
+        // determine schedule start/end for this schedule row
+        const sStartStr = s.start_date || s.startDate || s.start || null;
+        const sEndStr = s.end_date || s.endDate || s.end || null;
+
+        if (!sStartStr && !sEndStr) {
+          // no range info — assume always active
+          return true;
+        }
+
+        const sStart = sStartStr
+          ? new Date(String(sStartStr) + "T00:00:00")
+          : null;
+        const sEnd = sEndStr ? new Date(String(sEndStr) + "T00:00:00") : null;
+
+        // check dt within [sStart, sEnd]
+        if (sStart && dt < sStart) return false;
+        if (sEnd && dt > sEnd) return false;
+        return true;
+      });
+
       return { date: new Date(dt), entries };
     });
+
     return map;
   };
 
@@ -115,8 +158,47 @@ const MasterScheduler = () => {
         const url = `http://localhost/MyPortfolio/academic-scheduler/backend/api/list_weekly_schedules.php?${param}`;
         const res = await fetch(url);
         const j = await res.json();
-        if (j.success) setSchedules(j.schedules || []);
-        else setSchedules([]);
+        if (j.success) {
+          const sl = j.schedules || [];
+          setSchedules(sl);
+          // snap calendar to schedule span (earliest start -> latest end)
+          try {
+            const starts = sl
+              .map((s) => s.start_date || s.startDate || s.start)
+              .filter(Boolean)
+              .map((d) => new Date(d + "T00:00:00"));
+            const ends = sl
+              .map((s) => s.end_date || s.endDate || s.end)
+              .filter(Boolean)
+              .map((d) => new Date(d + "T00:00:00"));
+            if (starts.length > 0 && ends.length > 0) {
+              const earliest = new Date(
+                Math.min(...starts.map((d) => d.getTime())),
+              );
+              const latest = new Date(
+                Math.max(...ends.map((d) => d.getTime())),
+              );
+              const desiredFrom = earliest.toISOString().slice(0, 10);
+              const desiredTo = latest.toISOString().slice(0, 10);
+              if (dateFrom !== desiredFrom) setDateFrom(desiredFrom);
+              if (dateTo !== desiredTo) setDateTo(desiredTo);
+              const targetMonth = new Date(
+                earliest.getFullYear(),
+                earliest.getMonth(),
+                1,
+              );
+              if (
+                !visibleMonth ||
+                visibleMonth.getFullYear() !== targetMonth.getFullYear() ||
+                visibleMonth.getMonth() !== targetMonth.getMonth()
+              ) {
+                setVisibleMonth(targetMonth);
+              }
+            }
+          } catch {
+            /* ignore */
+          }
+        } else setSchedules([]);
       } catch (err) {
         console.error(err);
         setSchedules([]);
@@ -126,6 +208,10 @@ const MasterScheduler = () => {
     };
     load();
   }, [selectedId, viewMode]);
+
+  // visibleMonth is set when schedules load so user navigation isn't overridden.
+  // When schedules load for the selected entity, snap the calendar to the month
+  // containing the earliest schedule start date (handled inside the loader).
 
   // Week snapping is handled in UI event handlers to avoid setState-in-effect warnings
 
@@ -150,124 +236,186 @@ const MasterScheduler = () => {
             {message.text}
           </div>
         )}
-        <div
-          style={{
-            display: "flex",
-            gap: 12,
-            alignItems: "center",
-            margin: "0.5rem 0",
-          }}
-        >
+        <div className="ms-controls" style={{ margin: "0.5rem 0" }}>
           <label style={{ marginRight: 8 }}>View</label>
-          <select
-            value={viewMode}
-            onChange={(e) => {
-              setViewMode(e.target.value);
-              setSelectedId("");
-              setSchedules([]);
-            }}
-          >
-            <option value="student">Students</option>
-            <option value="teacher">Teachers</option>
-          </select>
+          <div className="ms-select small">
+            <select
+              value={viewMode}
+              onChange={(e) => {
+                setViewMode(e.target.value);
+                setSelectedId("");
+                setSchedules([]);
+                setEntityQuery("");
+                setFilteredEntities([]);
+                setSuggestionsVisible(false);
+              }}
+            >
+              <option value="student">Students</option>
+              <option value="teacher">Teachers</option>
+            </select>
+          </div>
 
           <div style={{ marginLeft: 12 }}>
             <label style={{ marginRight: 8 }}>
               {viewMode === "teacher" ? "Teacher" : "Student"}
             </label>
-            <select
-              value={selectedId}
-              onChange={(e) => setSelectedId(e.target.value)}
+            <div
+              className="ms-select ms-autocomplete"
+              style={{ position: "relative" }}
             >
-              <option value="">Select</option>
-              {viewMode === "teacher" &&
-                teachers.map((t) => (
-                  <option key={t.id} value={t.profile?.id || t.id}>
-                    {t.profile?.first_name} {t.profile?.last_name} -{" "}
-                    {t.profile?.teacher_code || t.username}
-                  </option>
-                ))}
-              {viewMode === "student" &&
-                students.map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.student_code} - {s.first_name} {s.last_name}
-                  </option>
-                ))}
-            </select>
-          </div>
-        </div>
-        <div style={{ overflowX: "auto" }}>
-          {/* Inline schedule view for selected teacher/student */}
-          {selectedId && (
-            <div style={{ marginBottom: "1rem" }}>
-              <div
-                style={{
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "center",
-                  marginBottom: 8,
+              <input
+                type="text"
+                className="ms-select-input"
+                placeholder={
+                  viewMode === "teacher"
+                    ? "Type teacher name or code"
+                    : "Type student name or code"
+                }
+                value={entityQuery}
+                onChange={(e) => {
+                  const q = e.target.value;
+                  setEntityQuery(q);
+                  const list = viewMode === "teacher" ? teachers : students;
+                  const ql = q.toLowerCase().trim();
+                  if (!ql) {
+                    setFilteredEntities([]);
+                    setSuggestionsVisible(false);
+                    setSelectedId("");
+                    return;
+                  }
+                  const matches = (list || [])
+                    .filter((it) => {
+                      const disp =
+                        viewMode === "teacher"
+                          ? `${it.profile?.first_name || ""} ${it.profile?.last_name || ""} ${it.profile?.teacher_code || it.username || ""}`
+                          : `${it.student_code || ""} ${it.first_name || ""} ${it.last_name || ""}`;
+                      return disp.toLowerCase().includes(ql);
+                    })
+                    .slice(0, 12);
+                  setFilteredEntities(matches);
+                  setSuggestionsVisible(matches.length > 0);
                 }}
+                onFocus={() => {
+                  if (filteredEntities.length > 0) setSuggestionsVisible(true);
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    if (filteredEntities.length > 0) {
+                      const it = filteredEntities[0];
+                      const id =
+                        viewMode === "teacher"
+                          ? it.profile?.id || it.id
+                          : it.id;
+                      setSelectedId(String(id));
+                      const label =
+                        viewMode === "teacher"
+                          ? `${it.profile?.first_name || ""} ${it.profile?.last_name || ""} - ${it.profile?.teacher_code || it.username || ""}`
+                          : `${it.student_code || ""} - ${it.first_name || ""} ${it.last_name || ""}`;
+                      setEntityQuery(label);
+                      setSuggestionsVisible(false);
+                    }
+                  }
+                  if (e.key === "Escape") setSuggestionsVisible(false);
+                }}
+              />
+              {suggestionsVisible && filteredEntities.length > 0 && (
+                <ul className="ms-suggest-list">
+                  {filteredEntities.map((it) => {
+                    const key =
+                      viewMode === "teacher" ? it.profile?.id || it.id : it.id;
+                    const label =
+                      viewMode === "teacher"
+                        ? `${it.profile?.first_name || ""} ${it.profile?.last_name || ""} - ${it.profile?.teacher_code || it.username || ""}`
+                        : `${it.student_code || ""} - ${it.first_name || ""} ${it.last_name || ""}`;
+                    return (
+                      <li
+                        key={key}
+                        className="ms-suggest-item"
+                        onMouseDown={(ev) => {
+                          ev.preventDefault();
+                          const id =
+                            viewMode === "teacher"
+                              ? it.profile?.id || it.id
+                              : it.id;
+                          setSelectedId(String(id));
+                          setEntityQuery(label);
+                          setSuggestionsVisible(false);
+                        }}
+                      >
+                        {label}
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+            </div>
+          </div>
+          {selectedId && (
+            <div style={{ marginLeft: 12 }}>
+              <label style={{ marginRight: 8 }}>Display</label>
+              <div className="ms-select small">
+                <select
+                  value={displayMode}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setDisplayMode(v);
+                    if (v === "weekly") {
+                      const base = parseYMD(dateFrom) || new Date();
+                      const start = startOfWeek(base, weekStartMonday);
+                      const end = addDays(start, 6);
+                      setDateFrom(start.toISOString().slice(0, 10));
+                      setDateTo(end.toISOString().slice(0, 10));
+                    }
+                  }}
+                >
+                  <option value="monthly">Monthly</option>
+                  <option value="weekly">Weekly</option>
+                </select>
+              </div>
+            </div>
+          )}
+          {selectedId &&
+            (displayMode === "weekly" || displayMode === "monthly") && (
+              <div
+                className="ms-control-right"
+                style={{ display: "flex", gap: 8, alignItems: "center" }}
               >
-                <div>
-                  <label style={{ marginRight: 8 }}>Display</label>
-                  <select
-                    value={displayMode}
-                    onChange={(e) => {
-                      const v = e.target.value;
-                      setDisplayMode(v);
-                      if (v === "weekly") {
-                        const base = parseYMD(dateFrom) || new Date();
-                        const start = startOfWeek(base, weekStartMonday);
-                        const end = addDays(start, 6);
-                        setDateFrom(start.toISOString().slice(0, 10));
-                        setDateTo(end.toISOString().slice(0, 10));
-                      }
-                    }}
+                {displayMode === "monthly" ? (
+                  <div
+                    style={{ display: "flex", gap: 8, alignItems: "center" }}
                   >
-                    <option value="monthly">Monthly</option>
-                    <option value="weekly">Weekly</option>
-                  </select>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <label style={{ marginRight: 6 }}>Week start Monday</label>
-                  <input
-                    type="checkbox"
-                    checked={weekStartMonday}
-                    onChange={(e) => {
-                      const checked = e.target.checked;
-                      setWeekStartMonday(checked);
-                      if (displayMode === "weekly") {
-                        const base = parseYMD(dateFrom) || new Date();
-                        const start = startOfWeek(base, checked);
-                        const end = addDays(start, 6);
-                        setDateFrom(start.toISOString().slice(0, 10));
-                        setDateTo(end.toISOString().slice(0, 10));
-                      }
-                    }}
-                  />
-                </div>
-                <div>
-                  <label style={{ marginRight: 6 }}>From</label>
-                  <input
-                    type="date"
-                    value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
-                  />
-                </div>
-                <div>
-                  <label style={{ marginRight: 6 }}>To</label>
-                  <input
-                    type="date"
-                    value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
-                  />
-                </div>
-                {displayMode === "weekly" && (
-                  <div style={{ marginLeft: 12, display: "flex", gap: 8 }}>
+                    <div className="ms-month-label" style={{ marginRight: 6 }}>
+                      {visibleMonth.toLocaleDateString(undefined, {
+                        month: "long",
+                        year: "numeric",
+                      })}
+                    </div>
+                    <div className="ms-month-nav">
+                      <button
+                        className="ms-nav-btn"
+                        onClick={() =>
+                          setVisibleMonth(addMonths(visibleMonth, -1))
+                        }
+                      >
+                        ▲
+                      </button>
+                      <button
+                        className="ms-nav-btn"
+                        onClick={() =>
+                          setVisibleMonth(addMonths(visibleMonth, 1))
+                        }
+                      >
+                        ▼
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
                     <button
                       className="btn ta-btn-outline"
                       onClick={() => {
-                        // prev week: move dateFrom/dateTo back by 7 days
+                        // prev week
                         const f = parseYMD(dateFrom);
                         const t = parseYMD(dateTo);
                         const nf = addDays(f, -7);
@@ -291,8 +439,24 @@ const MasterScheduler = () => {
                     >
                       ▶
                     </button>
-                  </div>
+                  </>
                 )}
+              </div>
+            )}
+        </div>
+        <div style={{ overflowX: "auto" }}>
+          {/* Inline schedule view for selected teacher/student */}
+          {selectedId && (
+            <div style={{ marginBottom: "1rem" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 12,
+                  alignItems: "center",
+                  marginBottom: 8,
+                }}
+              >
+                {/* Weekly nav moved to top controls */}
               </div>
 
               {loadingSchedules ? (
@@ -302,76 +466,100 @@ const MasterScheduler = () => {
                   const from = parseYMD(dateFrom);
                   const to = parseYMD(dateTo);
 
-                  // For monthly view, expand the range to full weeks (Mon-Sun or Sun-Sat based on weekStartMonday)
-                  let rangeFrom = from;
-                  let rangeTo = to;
+                  // Build a grid aligned to the configured week start and render
+                  // rows of 7 days. We compute the grid start as the start of the
+                  // week containing `dateFrom` and grid end as the end of the
+                  // week containing `dateTo` so every row has 7 columns and
+                  // entries align to weekday columns (Sun..Sat or Mon..Sun).
+                  const gridStart = startOfWeek(from, weekStartMonday);
+                  const gridEnd = addDays(startOfWeek(to, weekStartMonday), 6);
+                  const mappedWeek = mapSchedulesToDates(
+                    schedules,
+                    gridStart,
+                    gridEnd,
+                  );
+
+                  // Monthly view uses the visibleMonth state to render a standard
+                  // month calendar with weekday headers and up/down month nav.
                   if (displayMode === "monthly") {
-                    const monthStart = new Date(from.getFullYear(), from.getMonth(), 1);
-                    const monthEnd = new Date(from.getFullYear(), from.getMonth() + 1, 0);
-                    const start = startOfWeek(monthStart, weekStartMonday);
-                    const lastWeekStart = startOfWeek(monthEnd, weekStartMonday);
-                    const end = addDays(lastWeekStart, 6);
-                    rangeFrom = start;
-                    rangeTo = end;
-                  }
-                  const mapped = mapSchedulesToDates(schedules, rangeFrom, rangeTo);
-                  if (displayMode === "monthly") {
-                    // render simple grid: rows of 7 days
+                    const monthStart = startOfMonth(visibleMonth);
+                    const monthEnd = endOfMonth(visibleMonth);
+                    const monthGridStart = startOfWeek(
+                      monthStart,
+                      weekStartMonday,
+                    );
+                    const monthGridEnd = addDays(
+                      startOfWeek(monthEnd, weekStartMonday),
+                      6,
+                    );
+                    const mappedMonth = mapSchedulesToDates(
+                      schedules,
+                      monthGridStart,
+                      monthGridEnd,
+                    );
+
+                    const weekdays = weekStartMonday
+                      ? ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                      : ["Su", "Mo", "Tu", "We", "Th", "Fr", "Sa"];
+
+                    const cols = 7;
                     const rows = [];
-                    for (let i = 0; i < mapped.length; i += 7)
-                      rows.push(mapped.slice(i, i + 7));
+                    for (let i = 0; i < mappedMonth.length; i += cols)
+                      rows.push(mappedMonth.slice(i, i + cols));
+
                     return (
                       <div>
+                        <div className="ms-weekdays">
+                          {weekdays.map((w) => (
+                            <div key={w} className="ms-weekday">
+                              {w}
+                            </div>
+                          ))}
+                        </div>
+
                         {rows.map((week, wi) => (
-                          <div
-                            key={wi}
-                            style={{ display: "flex", gap: 8, marginBottom: 8 }}
-                          >
-                            {week.map((cell) => (
-                              <div
-                                key={cell.date.toISOString()}
-                                style={{
-                                  flex: 1,
-                                  border: "1px solid rgba(255,255,255,0.08)",
-                                  padding: 8,
-                                  borderRadius: 6,
-                                  background: "transparent",
-                                  color: "#ddd",
-                                }}
-                              >
-                                <div style={{ fontWeight: 600 }}>
-                                  {cell.date.toLocaleDateString(undefined, {
-                                    month: "short",
-                                    day: "numeric",
-                                  })}
-                                </div>
-                                <div style={{ marginTop: 6 }}>
-                                  {cell.entries.length === 0 ? (
-                                    <div style={{ color: "#777" }}>Day Off</div>
-                                  ) : (
-                                    cell.entries.map((e, idx) => (
-                                      <div
-                                        key={idx}
-                                        style={{
-                                          fontSize: 12,
-                                          padding: "2px 0",
-                                        }}
-                                      >
-                                        {formatTime(e.start_time)} -{" "}
-                                        {formatTime(e.end_time)}
+                          <div key={wi} className="ms-week">
+                            {week.map((cell) => {
+                              const isOtherMonth =
+                                cell.date.getMonth() !==
+                                visibleMonth.getMonth();
+                              return (
+                                <div
+                                  key={cell.date.toISOString()}
+                                  className={`ms-cell ${isOtherMonth ? "other" : ""}`}
+                                >
+                                  <div className="ms-cell-title">
+                                    {cell.date.toLocaleDateString(undefined, {
+                                      month: "short",
+                                      day: "numeric",
+                                    })}
+                                  </div>
+                                  <div className="ms-cell-entry">
+                                    {cell.entries.length === 0 ? (
+                                      <div className="ms-cell-empty">
+                                        {viewMode === "student"
+                                          ? "No class"
+                                          : "Day Off"}
                                       </div>
-                                    ))
-                                  )}
+                                    ) : (
+                                      cell.entries.map((e, idx) => (
+                                        <div key={idx}>
+                                          {formatTime(e.start_time)} -{" "}
+                                          {formatTime(e.end_time)}
+                                        </div>
+                                      ))
+                                    )}
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         ))}
                       </div>
                     );
                   }
-                  // weekly table view — show only the first 7 days (first week)
-                  const weekCells = mapped.slice(0, 7);
+                  // weekly table view — show only the first 7 days (week start -> week end)
+                  const weekCells = mappedWeek.slice(0, 7);
                   return (
                     <table className="ms-table" style={{ width: "100%" }}>
                       <thead>
@@ -394,7 +582,11 @@ const MasterScheduler = () => {
                                   weekday: "long",
                                 })}
                               </td>
-                              <td>-</td>
+                              <td>
+                                {viewMode === "student"
+                                  ? "No class"
+                                  : "Day Off"}
+                              </td>
                               <td>-</td>
                               <td>-</td>
                               <td>-</td>

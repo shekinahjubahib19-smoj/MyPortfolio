@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from "react";
 import "../assets/css/students.css";
 import EnrollStudent from "../assets/modals/enroll_student";
 import StudentProfileModal from "../assets/modals/student_profile_modal";
+import ErrorBoundary from "../components/ErrorBoundary";
 import { useAuth } from "../context/AuthContext";
 
 const Students = () => {
@@ -68,16 +69,18 @@ const Students = () => {
         </div>
       </header>
 
-      <EnrollStudent
-        isOpen={enrollOpen}
-        onClose={() => setEnrollOpen(false)}
-        onSaved={(res) => {
-          setEnrollOpen(false);
-          if (res.success) {
-            if (fetchRef.current) fetchRef.current();
-          }
-        }}
-      />
+      <ErrorBoundary>
+        <EnrollStudent
+          isOpen={enrollOpen}
+          onClose={() => setEnrollOpen(false)}
+          onSaved={(res) => {
+            setEnrollOpen(false);
+            if (res.success) {
+              if (fetchRef.current) fetchRef.current();
+            }
+          }}
+        />
+      </ErrorBoundary>
 
       <StudentProfileModal
         isOpen={profileOpen}

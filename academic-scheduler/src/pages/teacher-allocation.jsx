@@ -25,7 +25,7 @@ const TeacherAllocation = () => {
     subject_id: "",
     student_id: "",
     mode: "online",
-    weeks: 1,
+    weeks: "1",
     zoom_id: "",
     zoom_pass: "",
     room_name: "Room 101",
@@ -93,6 +93,43 @@ const TeacherAllocation = () => {
     loadSchedules(teacher.profile?.id);
   };
 
+  // derive selected student object
+  const selectedStudent =
+    (form.student_id &&
+      students.find((s) => String(s.id) === String(form.student_id))) ||
+    null;
+
+  // update student selection and clear subject when levels mismatch
+  const handleStudentChange = (studentId) => {
+    setForm((f) => {
+      const newForm = { ...f, student_id: studentId };
+      if (!studentId) return newForm;
+      const stu = students.find((s) => String(s.id) === String(studentId));
+      if (!stu) return newForm;
+      const studentLevel = (stu.current_level || stu.level || "")
+        .toString()
+        .trim()
+        .toLowerCase();
+      const subj = subjects.find((s) => String(s.id) === String(f.subject_id));
+      if (subj) {
+        const subjLevel = (
+          subj.level ??
+          subj.level_name ??
+          subj.levelName ??
+          subj.default_level ??
+          ""
+        )
+          .toString()
+          .trim()
+          .toLowerCase();
+        if (studentLevel && subjLevel && studentLevel !== subjLevel) {
+          newForm.subject_id = "";
+        }
+      }
+      return newForm;
+    });
+  };
+
   const loadSchedules = async (teacherProfileId) => {
     if (!teacherProfileId) return [];
     try {
@@ -155,6 +192,27 @@ const TeacherAllocation = () => {
     if (isNaN(d)) return null;
     d.setDate(d.getDate() + days);
     return d.toISOString().slice(0, 10);
+  };
+
+  // compute overall end date based on selected days and period (weeks)
+  const computeEndDate = (startDateStr, weeks, daysArray) => {
+    const n = Number(weeks) || 0;
+    if (!startDateStr || n <= 0) return null;
+    // if no days selected, fall back to simple weeks * 7 - 1
+    if (!Array.isArray(daysArray) || daysArray.length === 0) {
+      return addDaysISO(startDateStr, n * 7 - 1);
+    }
+    // compute the base date for the last week (start_date + (n-1)*7)
+    const lastWeekBase = addDaysISO(startDateStr, (n - 1) * 7);
+    if (!lastWeekBase) return null;
+    // for each selected day, find the date on/after lastWeekBase matching that day
+    let maxDate = null;
+    for (const d of daysArray) {
+      const candidate = getNextDateForDay(lastWeekBase, d);
+      if (!candidate) continue;
+      if (!maxDate || candidate > maxDate) maxDate = candidate;
+    }
+    return maxDate || addDaysISO(startDateStr, n * 7 - 1);
   };
 
   const getScheduledMinutesForDay = (day) => {
@@ -455,9 +513,7 @@ const TeacherAllocation = () => {
             <label>Student</label>
             <select
               value={form.student_id}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, student_id: e.target.value }))
-              }
+              onChange={(e) => handleStudentChange(e.target.value)}
             >
               <option value="">Select student</option>
               {students.map((s) => (
@@ -483,9 +539,32 @@ const TeacherAllocation = () => {
                     .map((ss) => Number(ss.id))
                     .includes(Number(s.id)),
                 )
+                .filter((s) => {
+                  // if no student selected, don't filter by level
+                  if (!form.student_id) return true;
+                  const stu = selectedStudent;
+                  if (!stu) return true;
+                  const studentLevel = (stu.current_level || stu.level || "")
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+                  const subjLevel = (
+                    s.level ??
+                    s.level_name ??
+                    s.levelName ??
+                    s.default_level ??
+                    ""
+                  )
+                    .toString()
+                    .trim()
+                    .toLowerCase();
+                  if (!studentLevel) return true;
+                  if (!subjLevel) return true;
+                  return studentLevel === subjLevel;
+                })
                 .map((s) => (
                   <option key={s.id} value={s.id}>
-                    {s.subject_name}
+                    {s.subject_name || s.name || s.subject}
                   </option>
                 ))}
             </select>
@@ -541,34 +620,16 @@ const TeacherAllocation = () => {
 
           <div className="ta-row">
             <label>Period (weeks)</label>
-            <select
-              value={form.weeks}
-              onChange={(e) => {
-                const v = e.target.value;
-                if (v === "custom") {
-                  setForm((f) => ({ ...f, weeks: "" }));
-                } else {
-                  setForm((f) => ({ ...f, weeks: Number(v) }));
-                }
-              }}
-            >
-              <option value={1}>1 week</option>
-              <option value={3}>3 weeks</option>
-              <option value={24}>24 weeks</option>
-              <option value={"custom"}>Custom</option>
-            </select>
-            {(!form.weeks || String(form.weeks) === "") && (
-              <input
-                type="number"
-                min={1}
-                style={{ marginLeft: 8, width: 100 }}
-                value={form.weeks}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, weeks: Number(e.target.value) }))
-                }
-                placeholder="# weeks"
-              />
-            )}
+            <input
+              type="number"
+              min={1}
+              style={{ marginLeft: 8, width: 160 }}
+              value={String(form.weeks ?? "")}
+              onChange={(e) =>
+                setForm((f) => ({ ...f, weeks: e.target.value }))
+              }
+              placeholder="# weeks"
+            />
           </div>
 
           <div className="ta-row">
@@ -585,9 +646,10 @@ const TeacherAllocation = () => {
               type="date"
               value={(() => {
                 if (!form.start_date || !form.weeks) return "";
-                const ed = addDaysISO(
+                const ed = computeEndDate(
                   form.start_date,
-                  Number(form.weeks) * 7 - 1,
+                  form.weeks,
+                  form.days,
                 );
                 return ed || "";
               })()}
