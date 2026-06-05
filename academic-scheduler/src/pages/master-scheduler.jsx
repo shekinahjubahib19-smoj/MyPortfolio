@@ -14,7 +14,7 @@ const MasterScheduler = () => {
   const [filteredEntities, setFilteredEntities] = useState([]);
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
-  const [displayMode, setDisplayMode] = useState("monthly"); // monthly | weekly
+  const [displayMode, _setDisplayMode] = useState("monthly"); // monthly | weekly
   const [dateFrom, setDateFrom] = useState(() => {
     const d = new Date();
     d.setDate(1);
@@ -46,6 +46,60 @@ const MasterScheduler = () => {
       dates.push(new Date(d));
     }
     return dates;
+  };
+
+  const parseDayOffs = (userOrProfile) => {
+    const raw =
+      (userOrProfile && (userOrProfile.day_offs || userOrProfile.day_off)) ||
+      (userOrProfile && userOrProfile.dayOff) ||
+      (userOrProfile && userOrProfile.day_off_of_week) ||
+      "";
+    if (!raw) return [];
+    const parts = Array.isArray(raw)
+      ? raw.map((x) => String(x))
+      : String(raw)
+          .split(",")
+          .map((x) => x.trim());
+    const map = {
+      sun: "Sunday",
+      sunday: "Sunday",
+      mon: "Monday",
+      monday: "Monday",
+      tue: "Tuesday",
+      tues: "Tuesday",
+      tuesday: "Tuesday",
+      wed: "Wednesday",
+      wednesday: "Wednesday",
+      thu: "Thursday",
+      thur: "Thursday",
+      thursday: "Thursday",
+      fri: "Friday",
+      friday: "Friday",
+      sat: "Saturday",
+      saturday: "Saturday",
+    };
+    const out = parts
+      .map((p) => {
+        const k = String(p || "").toLowerCase();
+        return (
+          map[k] ||
+          (p.length >= 3 ? p.slice(0, 1).toUpperCase() + p.slice(1) : null)
+        );
+      })
+      .filter(Boolean);
+    return out;
+  };
+
+  const isDateDayOffForSelected = (date) => {
+    if (viewMode !== "teacher") return false;
+    const id = String(selectedId);
+    const t = (teachers || []).find(
+      (it) => String(it.profile?.id || it.id) === id || String(it.id) === id,
+    );
+    if (!t) return false;
+    const offs = parseDayOffs(t.profile || t);
+    const dayLong = date.toLocaleDateString(undefined, { weekday: "long" });
+    return offs.includes(dayLong);
   };
 
   const addDays = (d, days) => {
@@ -207,7 +261,7 @@ const MasterScheduler = () => {
       }
     };
     load();
-  }, [selectedId, viewMode]);
+  }, [selectedId, viewMode, dateFrom, dateTo, visibleMonth]);
 
   // visibleMonth is set when schedules load so user navigation isn't overridden.
   // When schedules load for the selected entity, snap the calendar to the month
@@ -351,30 +405,7 @@ const MasterScheduler = () => {
               )}
             </div>
           </div>
-          {selectedId && (
-            <div style={{ marginLeft: 12 }}>
-              <label style={{ marginRight: 8 }}>Display</label>
-              <div className="ms-select small">
-                <select
-                  value={displayMode}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setDisplayMode(v);
-                    if (v === "weekly") {
-                      const base = parseYMD(dateFrom) || new Date();
-                      const start = startOfWeek(base, weekStartMonday);
-                      const end = addDays(start, 6);
-                      setDateFrom(start.toISOString().slice(0, 10));
-                      setDateTo(end.toISOString().slice(0, 10));
-                    }
-                  }}
-                >
-                  <option value="monthly">Monthly</option>
-                  <option value="weekly">Weekly</option>
-                </select>
-              </div>
-            </div>
-          )}
+          {/* Display selection removed per request */}
           {selectedId &&
             (displayMode === "weekly" || displayMode === "monthly") && (
               <div
@@ -508,7 +539,7 @@ const MasterScheduler = () => {
                       rows.push(mappedMonth.slice(i, i + cols));
 
                     return (
-                      <div>
+                      <div className="ms-calendar">
                         <div className="ms-weekdays">
                           {weekdays.map((w) => (
                             <div key={w} className="ms-weekday">
@@ -539,15 +570,64 @@ const MasterScheduler = () => {
                                       <div className="ms-cell-empty">
                                         {viewMode === "student"
                                           ? "No class"
-                                          : "Day Off"}
+                                          : isDateDayOffForSelected(cell.date)
+                                            ? "Day Off"
+                                            : "Available"}
                                       </div>
                                     ) : (
-                                      cell.entries.map((e, idx) => (
-                                        <div key={idx}>
-                                          {formatTime(e.start_time)} -{" "}
-                                          {formatTime(e.end_time)}
-                                        </div>
-                                      ))
+                                      <div className="ms-cell-entries">
+                                        {cell.entries.map((e, idx) => {
+                                          const studentFirst =
+                                            e.student_first_name ||
+                                            e.first_name ||
+                                            e.student_first ||
+                                            "";
+                                          const studentLast =
+                                            e.student_last_name ||
+                                            e.last_name ||
+                                            e.student_last ||
+                                            "";
+                                          const teacherFirst =
+                                            e.teacher_first_name ||
+                                            e.teacher_first ||
+                                            e.teacher_fname ||
+                                            "";
+                                          const teacherLast =
+                                            e.teacher_last_name ||
+                                            e.teacher_last ||
+                                            e.teacher_lname ||
+                                            "";
+                                          const teacherFull = (
+                                            e.teacher_name ||
+                                            `${teacherFirst} ${teacherLast}`.trim()
+                                          ).trim();
+                                          const studentFull =
+                                            `${studentFirst} ${studentLast}`.trim();
+
+                                          const person =
+                                            viewMode === "teacher"
+                                              ? studentFull ||
+                                                e.student_name ||
+                                                "-"
+                                              : teacherFull || "-";
+
+                                          const subject =
+                                            e.subject_code ||
+                                            e.subject ||
+                                            e.subject_name ||
+                                            "-";
+                                          const line = `${formatTime(e.start_time)} | ${person} | ${subject}`;
+                                          return (
+                                            <div
+                                              className="ms-entry"
+                                              key={idx}
+                                              title={line}
+                                            >
+                                              {line}
+                                            </div>
+                                          );
+                                        })}
+                                      </div>
                                     )}
                                   </div>
                                 </div>
@@ -560,40 +640,99 @@ const MasterScheduler = () => {
                   }
                   // weekly table view — show only the first 7 days (week start -> week end)
                   const weekCells = mappedWeek.slice(0, 7);
-                  return (
-                    <table className="ms-table" style={{ width: "100%" }}>
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Day</th>
-                          <th>Time</th>
-                          <th>Subject</th>
-                          <th>Student</th>
-                          <th>Room / Info</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {weekCells.map((cell) =>
-                          cell.entries.length === 0 ? (
-                            <tr key={cell.date.toISOString()}>
-                              <td>{cell.date.toLocaleDateString()}</td>
-                              <td>
-                                {cell.date.toLocaleDateString(undefined, {
-                                  weekday: "long",
-                                })}
-                              </td>
-                              <td>
-                                {viewMode === "student"
-                                  ? "No class"
-                                  : "Day Off"}
-                              </td>
-                              <td>-</td>
-                              <td>-</td>
-                              <td>-</td>
+                  if (viewMode === "student") {
+                    return (
+                      <div className="ms-calendar">
+                        <table className="ms-table" style={{ width: "100%" }}>
+                          <thead>
+                            <tr>
+                              <th>Date</th>
+                              <th>Day</th>
+                              <th>Time</th>
+                              <th>Teacher</th>
+                              <th>Subject</th>
                             </tr>
-                          ) : (
-                            cell.entries.map((e, i) => (
-                              <tr key={`${cell.date.toISOString()}-${i}`}>
+                          </thead>
+                          <tbody>
+                            {weekCells.map((cell) =>
+                              cell.entries.length === 0 ? (
+                                <tr key={cell.date.toISOString()}>
+                                  <td>{cell.date.toLocaleDateString()}</td>
+                                  <td>
+                                    {cell.date.toLocaleDateString(undefined, {
+                                      weekday: "long",
+                                    })}
+                                  </td>
+                                  <td>No class</td>
+                                  <td>-</td>
+                                  <td>-</td>
+                                </tr>
+                              ) : (
+                                cell.entries.map((e, i) => {
+                                  const teacherFirst =
+                                    e.teacher_first_name ||
+                                    e.teacher_first ||
+                                    e.teacher_fname ||
+                                    "";
+                                  const teacherLast =
+                                    e.teacher_last_name ||
+                                    e.teacher_last ||
+                                    e.teacher_lname ||
+                                    "";
+                                  const teacherFull =
+                                    (
+                                      e.teacher_name ||
+                                      `${teacherFirst} ${teacherLast}`.trim()
+                                    ).trim() || "-";
+                                  const subject =
+                                    e.subject_code ||
+                                    e.subject ||
+                                    e.subject_name ||
+                                    "-";
+                                  return (
+                                    <tr key={`${cell.date.toISOString()}-${i}`}>
+                                      <td>{cell.date.toLocaleDateString()}</td>
+                                      <td>
+                                        {cell.date.toLocaleDateString(
+                                          undefined,
+                                          {
+                                            weekday: "long",
+                                          },
+                                        )}
+                                      </td>
+                                      <td>
+                                        {e.start_time} - {e.end_time}
+                                      </td>
+                                      <td>{teacherFull}</td>
+                                      <td>{subject}</td>
+                                    </tr>
+                                  );
+                                })
+                              ),
+                            )}
+                          </tbody>
+                        </table>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="ms-calendar">
+                      <table className="ms-table" style={{ width: "100%" }}>
+                        <thead>
+                          <tr>
+                            <th>Date</th>
+                            <th>Day</th>
+                            <th>Time</th>
+                            <th>Subject</th>
+                            <th>Student</th>
+                            <th>Room / Info</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {weekCells.map((cell) =>
+                            cell.entries.length === 0 ? (
+                              <tr key={cell.date.toISOString()}>
                                 <td>{cell.date.toLocaleDateString()}</td>
                                 <td>
                                   {cell.date.toLocaleDateString(undefined, {
@@ -601,21 +740,42 @@ const MasterScheduler = () => {
                                   })}
                                 </td>
                                 <td>
-                                  {e.start_time} - {e.end_time}
+                                  {viewMode === "student"
+                                    ? "No class"
+                                    : isDateDayOffForSelected(cell.date)
+                                      ? "Day Off"
+                                      : "Available"}
                                 </td>
-                                <td>{e.subject_name || e.subject || "-"}</td>
-                                <td>
-                                  {e.student_code
-                                    ? `${e.student_code} - ${e.student_first_name} ${e.student_last_name}`
-                                    : "-"}
-                                </td>
-                                <td>{e.room_name || e.zoom_id || "-"}</td>
+                                <td>-</td>
+                                <td>-</td>
+                                <td>-</td>
                               </tr>
-                            ))
-                          ),
-                        )}
-                      </tbody>
-                    </table>
+                            ) : (
+                              cell.entries.map((e, i) => (
+                                <tr key={`${cell.date.toISOString()}-${i}`}>
+                                  <td>{cell.date.toLocaleDateString()}</td>
+                                  <td>
+                                    {cell.date.toLocaleDateString(undefined, {
+                                      weekday: "long",
+                                    })}
+                                  </td>
+                                  <td>
+                                    {e.start_time} - {e.end_time}
+                                  </td>
+                                  <td>{e.subject_name || e.subject || "-"}</td>
+                                  <td>
+                                    {e.student_code
+                                      ? `${e.student_code} - ${e.student_first_name} ${e.student_last_name}`
+                                      : "-"}
+                                  </td>
+                                  <td>{e.room_name || e.zoom_id || "-"}</td>
+                                </tr>
+                              ))
+                            ),
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
                   );
                 })()
               )}
