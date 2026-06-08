@@ -11,15 +11,17 @@
 .registration-modal {
   background: #0b1220;
   color: #fff;
-  width: 420px;
+  width: 520px;
   max-width: calc(100% - 2rem);
   border-radius: 0.5rem;
-  padding: 0.6rem 1rem; /* further reduce vertical padding to make modal visually shorter */
+  padding: 0.6rem 1.25rem;
   box-shadow: 0 10px 30px rgba(2, 6, 23, 0.6);
   position: relative;
-  /* limit height so modal doesn't fill the viewport; leave more top/bottom space */
   max-height: calc(100vh - 6rem);
   overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 .registration-close {
   position: absolute;
@@ -66,6 +68,7 @@
 .registration-modal select,
 .registration-modal textarea {
   width: 100%;
+  max-width: 380px;
   box-sizing: border-box;
 }
 

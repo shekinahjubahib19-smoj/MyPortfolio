@@ -180,24 +180,15 @@ const Profile = () => {
       <div className="setup-list">
         <div style={{ padding: "0 0rem", maxWidth: 1100, margin: "0 auto" }}>
           <div
-            style={{ display: "flex", flexDirection: "column", minHeight: 520 }}
+            style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "1.5rem", paddingTop: "1rem" }}
           >
             {/* single-step profile form for teachers and admins (hidden when savedProfile exists) */}
             {!savedProfile && (
               <>
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "flex-start",
-                    paddingTop: "1rem",
-                  }}
-                >
+                <div style={{ width: 560, maxWidth: "100%" }}>
                   <form
                     onSubmit={(e) => e.preventDefault()}
                     className={isAdmin ? "setup-admin-form" : ""}
-                    style={{ width: 560, marginLeft: "-1rem" }}
                   >
                     <div style={{ marginTop: 8 }}>
                       <div className="setup-section">
@@ -265,8 +256,6 @@ const Profile = () => {
                     display: "flex",
                     justifyContent: "center",
                     gap: "0.5rem",
-                    marginTop: "0.25rem",
-                    minHeight: "68px",
                     alignItems: "center",
                   }}
                 >
@@ -313,18 +302,9 @@ const Profile = () => {
             {/* Display profile as read-only form when present; single Edit button */}
             {savedProfile && (
               <>
-                <div
-                  style={{
-                    flex: 1,
-                    display: "flex",
-                    justifyContent: "center",
-                    alignItems: "flex-start",
-                    paddingTop: "1rem",
-                  }}
-                >
+                <div style={{ width: 560, maxWidth: "100%" }}>
                   <form
                     className={isAdmin ? "setup-admin-form" : ""}
-                    style={{ width: 560, marginLeft: "-1rem" }}
                     onSubmit={(e) => e.preventDefault()}
                   >
                     <div style={{ marginTop: 8 }}>
@@ -384,8 +364,6 @@ const Profile = () => {
                     display: "flex",
                     justifyContent: "center",
                     gap: "0.5rem",
-                    marginTop: "0.25rem",
-                    minHeight: "68px",
                     alignItems: "center",
                   }}
                 >
