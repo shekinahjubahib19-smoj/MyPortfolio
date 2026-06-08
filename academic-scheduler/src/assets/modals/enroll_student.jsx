@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from "react";
 import "../css/registration.css";
 
+const API_BASE = "/backend";
+
 const EnrollStudent = ({ isOpen, onClose, onSaved, initialData }) => {
   const capitalizeName = (v) =>
     v
@@ -58,10 +60,10 @@ const EnrollStudent = ({ isOpen, onClose, onSaved, initialData }) => {
         enrollment_status: status,
       };
       const url = initialData?.id
-        ? "/backend/api/update_student.php"
-        : "/backend/api/create_student.php";
+        ? "/api/update_student.php"
+        : "/api/create_student.php";
       const res = await fetch(
-        `http://localhost/MyPortfolio/academic-scheduler${url}`,
+        `${API_BASE}${url}`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

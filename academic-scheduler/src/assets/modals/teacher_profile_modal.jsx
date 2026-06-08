@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo } from "react";
 import "../css/registration.css";
 
+const API_BASE = "/backend";
+
 const TeacherProfileModal = ({
   isOpen,
   onClose,
@@ -47,7 +49,7 @@ const TeacherProfileModal = ({
     if (!isOpen) return;
     // load available subjects
     fetch(
-      "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_subjects.php",
+      `${API_BASE}/api/list_subjects.php`,
     )
       .then((r) => r.json())
       .then((j) => {
@@ -128,7 +130,7 @@ const TeacherProfileModal = ({
         day_offs: form.dayOffs,
       };
       const res = await fetch(
-        "http://localhost/MyPortfolio/academic-scheduler/backend/api/update_teacher_profile.php",
+        `${API_BASE}/api/update_teacher_profile.php`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

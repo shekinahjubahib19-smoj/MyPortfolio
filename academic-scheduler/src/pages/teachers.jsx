@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import "../assets/css/students.css";
 import TeacherProfileModal from "../assets/modals/teacher_profile_modal";
+import API_BASE from "../config.js";
 
 const dayNames = [
   "Sunday",
@@ -24,7 +25,7 @@ const TeachersPage = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_users.php",
+          `${API_BASE}/api/list_users.php`,
         );
         const j = await res.json();
         if (!j.success) {
@@ -40,7 +41,7 @@ const TeachersPage = () => {
             try {
               const sid = t.profile?.id;
               const schedRes = await fetch(
-                `http://localhost/MyPortfolio/academic-scheduler/backend/api/list_weekly_schedules.php?teacher_profile_id=${sid}`,
+                `${API_BASE}/api/list_weekly_schedules.php?teacher_profile_id=${sid}`,
               );
               const sj = await schedRes.json();
               const schedules = sj.success ? sj.schedules || [] : [];

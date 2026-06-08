@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../assets/css/user-management.css";
 import Registration from "../assets/modals/registration";
+import API_BASE from "../config.js";
 import RegisterModal from "../assets/modals/register_modal";
 import TeacherProfileModal from "../assets/modals/teacher_profile_modal";
 import { useAuth } from "../context/AuthContext";
@@ -26,7 +27,7 @@ const UserManagement = () => {
     fetchRef.current = async () => {
       try {
         const res = await fetch(
-          "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_users.php",
+          `${API_BASE}/api/list_users.php`,
         );
         const json = await res.json();
         if (json.success) setUsers(json.users || []);

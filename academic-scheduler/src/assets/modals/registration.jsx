@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import '../css/registration.css';
 
+const API_BASE = '/backend';
+
 const Registration = ({ isOpen, onClose, onShowResult }) => {
 	const [formData, setFormData] = useState({ username: '', password: '', role: 'TEACHER' });
 	const [message, setMessage] = useState('');
@@ -13,7 +15,7 @@ const Registration = ({ isOpen, onClose, onShowResult }) => {
 		setMessage('Processing...');
 
 		try {
-			const response = await fetch('http://localhost/MyPortfolio/academic-scheduler/backend/api/register_user.php', {
+			const response = await fetch(`${API_BASE}/api/register_user.php`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify(formData),

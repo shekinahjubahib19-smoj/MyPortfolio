@@ -1,5 +1,9 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import "../assets/css/master-scheduler.css";
+import jsPDF from "jspdf";
+import { autoTable } from "jspdf-autotable";
+import * as XLSX from "xlsx";
+import API_BASE from "../config.js";
 
 const MasterScheduler = () => {
   const [assignments, _setAssignments] = useState([]);
@@ -33,6 +37,21 @@ const MasterScheduler = () => {
     const d = new Date();
     return new Date(d.getFullYear(), d.getMonth(), 1);
   });
+
+  // Download dropdown state
+  const [downloadOpen, setDownloadOpen] = useState(false);
+  const downloadRef = useRef(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (downloadRef.current && !downloadRef.current.contains(e.target)) {
+        setDownloadOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
 
   const parseYMD = (s) => (s ? new Date(s + "T00:00:00") : null);
 
@@ -133,24 +152,18 @@ const MasterScheduler = () => {
       const dayName = dt.toLocaleDateString(undefined, { weekday: "long" });
 
       const entries = (schedulesArr || []).filter((s) => {
-        // match weekday first
         if (s.day_of_week !== dayName) return false;
 
-        // determine schedule start/end for this schedule row
         const sStartStr = s.start_date || s.startDate || s.start || null;
         const sEndStr = s.end_date || s.endDate || s.end || null;
 
-        if (!sStartStr && !sEndStr) {
-          // no range info — assume always active
-          return true;
-        }
+        if (!sStartStr && !sEndStr) return true;
 
         const sStart = sStartStr
           ? new Date(String(sStartStr) + "T00:00:00")
           : null;
         const sEnd = sEndStr ? new Date(String(sEndStr) + "T00:00:00") : null;
 
-        // check dt within [sStart, sEnd]
         if (sStart && dt < sStart) return false;
         if (sEnd && dt > sEnd) return false;
         return true;
@@ -164,7 +177,6 @@ const MasterScheduler = () => {
 
   const formatTime = (t) => {
     if (!t) return "";
-    // accept HH:MM or HH:MM:SS
     const parts = String(t).split(":");
     const hh = Number(parts[0] || 0);
     const mm = Number(parts[1] || 0);
@@ -173,16 +185,151 @@ const MasterScheduler = () => {
     return `${hour12}:${String(mm).padStart(2, "0")} ${ampm}`;
   };
 
+  // ─── Build flat rows for export ──────────────────────────────────────────────
+  const buildExportRows = () => {
+    const from = parseYMD(dateFrom);
+    const to = parseYMD(dateTo);
+
+    let cells = [];
+    if (displayMode === "monthly") {
+      const monthStart = startOfMonth(visibleMonth);
+      const monthEnd = endOfMonth(visibleMonth);
+      const gs = startOfWeek(monthStart, weekStartMonday);
+      const ge = addDays(startOfWeek(monthEnd, weekStartMonday), 6);
+      cells = mapSchedulesToDates(schedules, gs, ge).filter(
+        (c) => c.date.getMonth() === visibleMonth.getMonth(),
+      );
+    } else {
+      const gs = startOfWeek(from, weekStartMonday);
+      const ge = addDays(startOfWeek(to, weekStartMonday), 6);
+      cells = mapSchedulesToDates(schedules, gs, ge).slice(0, 7);
+    }
+
+    const rows = [];
+    cells.forEach((cell) => {
+      const dateStr = cell.date.toLocaleDateString(undefined, {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      });
+      const dayStr = cell.date.toLocaleDateString(undefined, {
+        weekday: "long",
+      });
+
+      if (cell.entries.length === 0) {
+        const status = isDateDayOffForSelected(cell.date)
+          ? "Day Off"
+          : viewMode === "student"
+            ? "No class"
+            : "Available";
+        rows.push([dateStr, dayStr, status, "-", "-"]);
+      } else {
+        cell.entries.forEach((e) => {
+          const timeStr = `${formatTime(e.start_time)} - ${formatTime(e.end_time)}`;
+          const subject = e.subject_name || e.subject || e.subject_code || "-";
+          if (viewMode === "student") {
+            const teacherFirst =
+              e.teacher_first_name || e.teacher_first || e.teacher_fname || "";
+            const teacherLast =
+              e.teacher_last_name || e.teacher_last || e.teacher_lname || "";
+            const teacherFull =
+              (
+                e.teacher_name || `${teacherFirst} ${teacherLast}`.trim()
+              ).trim() || "-";
+            rows.push([dateStr, dayStr, timeStr, subject, teacherFull]);
+          } else {
+            const studentStr = e.student_code
+              ? `${e.student_code} - ${e.student_first_name || ""} ${e.student_last_name || ""}`.trim()
+              : "-";
+            rows.push([dateStr, dayStr, timeStr, subject, studentStr]);
+          }
+        });
+      }
+    });
+
+    return rows;
+  };
+
+  const exportHeaders =
+    viewMode === "student"
+      ? ["Date", "Day", "Time", "Subject", "Teacher"]
+      : ["Date", "Day", "Time", "Subject", "Student"];
+
+  const exportTitle = `Schedule — ${entityQuery} (${
+    displayMode === "monthly"
+      ? visibleMonth.toLocaleDateString(undefined, {
+          month: "long",
+          year: "numeric",
+        })
+      : `${dateFrom} to ${dateTo}`
+  })`;
+
+  const handleDownload = (format) => {
+    setDownloadOpen(false);
+    const rows = buildExportRows();
+
+    if (format === "pdf") {
+      const doc = new jsPDF({
+        orientation: "landscape",
+        unit: "in",
+        format: "letter",
+      });
+      doc.setFontSize(13);
+      doc.text(exportTitle, 0.5, 0.45);
+
+      const dayColors = {
+        Monday:    [255, 255, 204], // light yellow
+        Tuesday:   [204, 229, 255], // light blue
+        Wednesday: [255, 204, 228], // light pink
+        Thursday:  [204, 255, 204], // light green
+        Friday:    [229, 204, 255], // light purple
+        Saturday:  [255, 229, 204], // light orange
+        Sunday:    [240, 214, 186], // light brown
+      };
+
+      autoTable(doc, {
+        head: [exportHeaders],
+        body: rows,
+        startY: 0.65,
+        margin: { left: 0.5, right: 0.5, top: 0.5, bottom: 0.5 },
+        styles: { fontSize: 9, cellPadding: 0.05 },
+        headStyles: { fillColor: [41, 98, 255] },
+        willDrawCell: (data) => {
+          // Fill background before text is drawn
+          if (data.section !== "body") return;
+          const day = data.row.raw[1];
+          const color = dayColors[day];
+          if (color) {
+            doc.setFillColor(...color);
+            doc.rect(data.cursor.x, data.cursor.y, data.column.width, data.row.height, "F");
+          }
+        },
+      });
+      doc.save(`schedule-${entityQuery.replace(/\s+/g, "_")}.pdf`);
+    } else {
+      const wsData = [exportHeaders, ...rows];
+      const ws = XLSX.utils.aoa_to_sheet(wsData);
+
+      // Auto column widths
+      const colWidths = exportHeaders.map((h, ci) => ({
+        wch:
+          Math.max(h.length, ...rows.map((r) => String(r[ci] || "").length)) +
+          2,
+      }));
+      ws["!cols"] = colWidths;
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Schedule");
+      XLSX.writeFile(wb, `schedule-${entityQuery.replace(/\s+/g, "_")}.xlsx`);
+    }
+  };
+
   useEffect(() => {
     (async () => {
       try {
         const [usersRes, studentsRes] = await Promise.all([
-          fetch(
-            "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_users.php",
-          ),
-          fetch(
-            "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_students.php",
-          ),
+          fetch(`${API_BASE}/api/list_users.php`),
+          fetch(`${API_BASE}/api/list_students.php`),
         ]);
         const usersJson = await usersRes.json();
         const studentsJson = await studentsRes.json();
@@ -200,6 +347,10 @@ const MasterScheduler = () => {
     })();
   }, []);
 
+  // track whether the initial load has completed so we don't
+  // override the user's manual month navigation
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+
   useEffect(() => {
     const load = async () => {
       if (!selectedId) return setSchedules([]);
@@ -209,13 +360,12 @@ const MasterScheduler = () => {
           viewMode === "teacher"
             ? `teacher_profile_id=${selectedId}`
             : `student_id=${selectedId}`;
-        const url = `http://localhost/MyPortfolio/academic-scheduler/backend/api/list_weekly_schedules.php?${param}`;
+        const url = `${API_BASE}/api/list_weekly_schedules.php?${param}`;
         const res = await fetch(url);
         const j = await res.json();
         if (j.success) {
           const sl = j.schedules || [];
           setSchedules(sl);
-          // snap calendar to schedule span (earliest start -> latest end)
           try {
             const starts = sl
               .map((s) => s.start_date || s.startDate || s.start)
@@ -241,13 +391,17 @@ const MasterScheduler = () => {
                 earliest.getMonth(),
                 1,
               );
+              // Only auto-sync visibleMonth on the first load,
+              // not when the user navigates to a different month
               if (
-                !visibleMonth ||
-                visibleMonth.getFullYear() !== targetMonth.getFullYear() ||
-                visibleMonth.getMonth() !== targetMonth.getMonth()
+                !initialLoadDone &&
+                (!visibleMonth ||
+                  visibleMonth.getFullYear() !== targetMonth.getFullYear() ||
+                  visibleMonth.getMonth() !== targetMonth.getMonth())
               ) {
                 setVisibleMonth(targetMonth);
               }
+              setInitialLoadDone(true);
             }
           } catch {
             /* ignore */
@@ -261,13 +415,7 @@ const MasterScheduler = () => {
       }
     };
     load();
-  }, [selectedId, viewMode, dateFrom, dateTo, visibleMonth]);
-
-  // visibleMonth is set when schedules load so user navigation isn't overridden.
-  // When schedules load for the selected entity, snap the calendar to the month
-  // containing the earliest schedule start date (handled inside the loader).
-
-  // Week snapping is handled in UI event handlers to avoid setState-in-effect warnings
+  }, [selectedId, viewMode]);
 
   return (
     <div className="ms-root">
@@ -405,12 +553,19 @@ const MasterScheduler = () => {
               )}
             </div>
           </div>
-          {/* Display selection removed per request */}
+
+          {/* Month nav + Download button — visible only when schedule is loaded */}
           {selectedId &&
+            schedules.length > 0 &&
             (displayMode === "weekly" || displayMode === "monthly") && (
               <div
                 className="ms-control-right"
-                style={{ display: "flex", gap: 8, alignItems: "center" }}
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  marginLeft: "auto",
+                }}
               >
                 {displayMode === "monthly" ? (
                   <div
@@ -446,13 +601,10 @@ const MasterScheduler = () => {
                     <button
                       className="btn ta-btn-outline"
                       onClick={() => {
-                        // prev week
                         const f = parseYMD(dateFrom);
                         const t = parseYMD(dateTo);
-                        const nf = addDays(f, -7);
-                        const nt = addDays(t, -7);
-                        setDateFrom(nf.toISOString().slice(0, 10));
-                        setDateTo(nt.toISOString().slice(0, 10));
+                        setDateFrom(addDays(f, -7).toISOString().slice(0, 10));
+                        setDateTo(addDays(t, -7).toISOString().slice(0, 10));
                       }}
                     >
                       ◀
@@ -462,16 +614,86 @@ const MasterScheduler = () => {
                       onClick={() => {
                         const f = parseYMD(dateFrom);
                         const t = parseYMD(dateTo);
-                        const nf = addDays(f, 7);
-                        const nt = addDays(t, 7);
-                        setDateFrom(nf.toISOString().slice(0, 10));
-                        setDateTo(nt.toISOString().slice(0, 10));
+                        setDateFrom(addDays(f, 7).toISOString().slice(0, 10));
+                        setDateTo(addDays(t, 7).toISOString().slice(0, 10));
                       }}
                     >
                       ▶
                     </button>
                   </>
                 )}
+
+                {/* ── Download dropdown ── */}
+                <div ref={downloadRef} style={{ position: "relative" }}>
+                  <button
+                    className="btn ta-btn-outline"
+                    style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    onClick={() => setDownloadOpen((o) => !o)}
+                    title="Download schedule"
+                  >
+                    <svg
+                      width="15"
+                      height="15"
+                      viewBox="0 0 15 15"
+                      fill="none"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M7.5 10.5L3 6h3V1h3v5h3L7.5 10.5Z"
+                        fill="currentColor"
+                      />
+                      <path d="M2 12h11v1.5H2V12Z" fill="currentColor" />
+                    </svg>
+                    Download ▾
+                  </button>
+                  {downloadOpen && (
+                    <div
+                      style={{
+                        position: "absolute",
+                        right: 0,
+                        top: "calc(100% + 4px)",
+                        background: "var(--ms-bg, #fff)",
+                        border: "1px solid var(--ms-border, #dde1ea)",
+                        borderRadius: 6,
+                        boxShadow: "0 4px 16px rgba(0,0,0,0.12)",
+                        minWidth: 140,
+                        zIndex: 100,
+                        overflow: "hidden",
+                      }}
+                    >
+                      {[
+                        { fmt: "pdf", label: "📄  Export as PDF" },
+                        { fmt: "excel", label: "📊  Export as Excel" },
+                      ].map(({ fmt, label }) => (
+                        <button
+                          key={fmt}
+                          onClick={() => handleDownload(fmt)}
+                          style={{
+                            display: "block",
+                            width: "100%",
+                            padding: "9px 16px",
+                            background: "none",
+                            border: "none",
+                            textAlign: "left",
+                            cursor: "pointer",
+                            fontSize: 13,
+                            color: "var(--ms-text, #1a1d23)",
+                            whiteSpace: "nowrap",
+                          }}
+                          onMouseEnter={(e) =>
+                            (e.currentTarget.style.background =
+                              "var(--ms-hover-bg, #f0f3ff)")
+                          }
+                          onMouseLeave={(e) =>
+                            (e.currentTarget.style.background = "none")
+                          }
+                        >
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
         </div>
@@ -497,11 +719,6 @@ const MasterScheduler = () => {
                   const from = parseYMD(dateFrom);
                   const to = parseYMD(dateTo);
 
-                  // Build a grid aligned to the configured week start and render
-                  // rows of 7 days. We compute the grid start as the start of the
-                  // week containing `dateFrom` and grid end as the end of the
-                  // week containing `dateTo` so every row has 7 columns and
-                  // entries align to weekday columns (Sun..Sat or Mon..Sun).
                   const gridStart = startOfWeek(from, weekStartMonday);
                   const gridEnd = addDays(startOfWeek(to, weekStartMonday), 6);
                   const mappedWeek = mapSchedulesToDates(
@@ -510,8 +727,6 @@ const MasterScheduler = () => {
                     gridEnd,
                   );
 
-                  // Monthly view uses the visibleMonth state to render a standard
-                  // month calendar with weekday headers and up/down month nav.
                   if (displayMode === "monthly") {
                     const monthStart = startOfMonth(visibleMonth);
                     const monthEnd = endOfMonth(visibleMonth);
@@ -612,9 +827,9 @@ const MasterScheduler = () => {
                                               : teacherFull || "-";
 
                                           const subject =
-                                            e.subject_code ||
-                                            e.subject ||
                                             e.subject_name ||
+                                            e.subject ||
+                                            e.subject_code ||
                                             "-";
                                           const line = `${formatTime(e.start_time)} | ${person} | ${subject}`;
                                           return (
@@ -638,7 +853,7 @@ const MasterScheduler = () => {
                       </div>
                     );
                   }
-                  // weekly table view — show only the first 7 days (week start -> week end)
+
                   const weekCells = mappedWeek.slice(0, 7);
                   if (viewMode === "student") {
                     return (
@@ -685,9 +900,9 @@ const MasterScheduler = () => {
                                       `${teacherFirst} ${teacherLast}`.trim()
                                     ).trim() || "-";
                                   const subject =
-                                    e.subject_code ||
-                                    e.subject ||
                                     e.subject_name ||
+                                    e.subject ||
+                                    e.subject_code ||
                                     "-";
                                   return (
                                     <tr key={`${cell.date.toISOString()}-${i}`}>
@@ -695,9 +910,7 @@ const MasterScheduler = () => {
                                       <td>
                                         {cell.date.toLocaleDateString(
                                           undefined,
-                                          {
-                                            weekday: "long",
-                                          },
+                                          { weekday: "long" },
                                         )}
                                       </td>
                                       <td>
@@ -762,7 +975,12 @@ const MasterScheduler = () => {
                                   <td>
                                     {e.start_time} - {e.end_time}
                                   </td>
-                                  <td>{e.subject_name || e.subject || "-"}</td>
+                                  <td>
+                                    {e.subject_name ||
+                                      e.subject ||
+                                      e.subject_code ||
+                                      "-"}
+                                  </td>
                                   <td>
                                     {e.student_code
                                       ? `${e.student_code} - ${e.student_first_name} ${e.student_last_name}`

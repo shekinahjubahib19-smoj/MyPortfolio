@@ -141,7 +141,7 @@
 /* Single-column form layout tweaks: keep label and control close */
 .ta-form-single {
   max-width: 980px;
-  margin: 0 auto;
+  margin: 12vh auto 0;
 }
 .ta-form-single .ta-panel {
   padding: 0.9rem;
@@ -228,7 +228,7 @@
 .ta-step-actions {
   display: flex;
   gap: 0.5rem;
-  justify-content: flex-end;
+  justify-content: center;
 }
 .ta-empty {
   opacity: 0.7;
@@ -238,7 +238,135 @@
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* ── TypeField (type-to-search combobox) ───────────────────────────────────── */
+.tf-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.tf-label {
+  color: rgba(255, 255, 255, 0.8);
+  flex: 0 0 160px;
+  width: 160px;
+  margin-right: 0.5rem;
+  cursor: default;
+}
+.tf-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+.tf-input {
+  width: 100%;
+  background: #0b0f14;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.35rem 2rem 0.35rem 0.5rem;
+  border-radius: 0.25rem;
+  font-size: inherit;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.tf-input:focus {
+  border-color: rgba(0, 200, 255, 0.5);
+}
+/* Clear (×) button — subtle gray when field has a value */
+.tf-clear {
+  position: absolute;
+  right: 0.35rem;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.3);
+  padding: 0.1rem;
+  display: flex;
+  align-items: center;
+  font-size: 1rem;
+  line-height: 1;
+  border-radius: 50%;
+  transition: color 0.15s, background 0.15s;
+}
+.tf-clear:hover {
+  color: rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.06);
+}
+/* Dropdown — aligns to the .tf-field container, not the full label+field row */
+.tf-field .tf-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 320px;
+  z-index: 999;
+  background: #111920;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 0.35rem;
+  max-height: 220px;
+  overflow-y: auto;
+  list-style: none;
+  margin: 0;
+  padding: 0.25rem 0;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+}
+.tf-option {
+  padding: 0.4rem 0.65rem;
+  cursor: pointer;
+  border-radius: 0.2rem;
+  font-size: 0.875rem;
+}
+.tf-option:hover,
+.tf-option.tf-highlight {
+  background: rgba(0, 200, 255, 0.12);
+  color: #a0e8ff;
+}
+.tf-empty {
+  padding: 0.4rem 0.65rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.875rem;
+}
+
+/* ── Time inputs – clicking label opens native picker ────────────────────────── */
+.ta-row--time {
+  justify-content: flex-start;
+}
+.tf-time-label {
+  color: rgba(255, 255, 255, 0.8);
+  flex: 0 0 160px;
+  width: 160px;
+  margin-right: 0.5rem;
+  cursor: pointer;
+  user-select: none;
+}
+.tf-time-label:hover { color: #a0d8ff; }
+.ta-time-input {
+  background: #0b0f14;
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  cursor: pointer;
+  font-family: inherit;
+}
+.ta-time-input:focus {
+  border-color: rgba(0, 200, 255, 0.5);
+  outline: none;
+}
+
 @media (max-width: 1100px) {
+  .tf-label,
+  .ta-form-single .ta-row label,
+  .tf-time-label {
+    flex: 0 0 120px;
+    width: 120px;
+  }
   .ta-steps-bar {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -249,7 +377,7 @@
     grid-column: span 1;
   }
   .ta-step-actions {
-    justify-content: space-between;
+    justify-content: center;
   }
   .ta-form-single .ta-row label {
     flex: 0 0 120px;

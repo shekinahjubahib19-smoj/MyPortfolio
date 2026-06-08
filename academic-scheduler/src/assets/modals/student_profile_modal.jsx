@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import "../css/registration.css";
 import { useAuth } from "../../context/AuthContext";
 
+const API_BASE = "/backend";
+
 const StudentProfileModal = ({
   isOpen,
   onClose,
@@ -68,7 +70,7 @@ const StudentProfileModal = ({
         enrollment_status: form.status,
       };
       const res = await fetch(
-        "http://localhost/MyPortfolio/academic-scheduler/backend/api/update_student.php",
+        `${API_BASE}/api/update_student.php`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -96,7 +98,7 @@ const StudentProfileModal = ({
     setMessage("");
     try {
       const res = await fetch(
-        "http://localhost/MyPortfolio/academic-scheduler/backend/api/delete_student.php",
+        `${API_BASE}/api/delete_student.php`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

@@ -28,8 +28,6 @@ try {
   $day_of_week = trim($data['day_of_week'] ?? '');
   $start_time = trim($data['start_time'] ?? '');
   $end_time = trim($data['end_time'] ?? '');
-  $mode = isset($data['mode']) ? trim($data['mode']) : 'online';
-  $weeks = isset($data['weeks']) ? intval($data['weeks']) : 1;
   $zoom_id = trim($data['zoom_id'] ?? '');
   // accept either 'zoom_pass' or 'zoom_password' from client
   $zoom_password = trim($data['zoom_pass'] ?? $data['zoom_password'] ?? '');
@@ -37,30 +35,11 @@ try {
   $room_id = isset($data['room_id']) ? intval($data['room_id']) : null;
   $start_date = trim($data['start_date'] ?? '');
   $end_date = trim($data['end_date'] ?? '');
+  $weeks = isset($data['weeks']) ? intval($data['weeks']) : 1;
 
   if ($teacher_profile_id <= 0 || $subject_id <= 0 || $day_of_week === '' || $start_time === '' || $end_time === '') {
     echo json_encode(["success" => false, "message" => "Missing required fields"]);
     exit;
-  }
-
-  // mode-based validation: ensure required fields present depending on mode
-  if ($mode === 'online') {
-    if ($zoom_id === '') {
-      echo json_encode(["success" => false, "message" => "Missing online meeting ID (zoom_id) for online mode"]);
-      exit;
-    }
-    // ensure room_id is non-null to satisfy check constraint (use 0 when not applicable)
-    $room_id_val = 0;
-  } else {
-    // f2f
-    if ($room_name === '') {
-      echo json_encode(["success" => false, "message" => "Missing room information for face-to-face mode"]);
-      exit;
-    }
-    // ensure zoom_id is non-null to avoid null mismatch; use empty string
-    $zoom_id = $zoom_id ?? '';
-    $zoom_password = $zoom_password ?? '';
-    $room_id_val = $room_id !== null ? $room_id : 0;
   }
 
   // Validate subject assignment for teacher
@@ -148,10 +127,11 @@ try {
   }
 
   $ins = $conn->prepare(
-    "INSERT INTO weekly_schedules (teacher_profile_id, subject_id, student_id, day_of_week, start_time, end_time, mode, weeks, zoom_id, zoom_password, room_id, room_name, start_date, end_date, created_at)
-     VALUES (?, ?, NULLIF(?, 0), ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, NULLIF(?, ''), NULLIF(?, ''), NULLIF(?, ''), NOW())"
+    "INSERT INTO weekly_schedules
+      (teacher_profile_id, subject_id, student_id, day_of_week, start_time, end_time,
+       mode, weeks, zoom_id, zoom_password, room_id, room_name, start_date, end_date, created_at)
+     VALUES (?, ?, NULLIF(?, 0), ?, ?, ?, ?, ?, NULLIF(?, ''), NULLIF(?, ''), ?, ?, NULLIF(?, ''), NULLIF(?, ''), NOW())"
   );
-  // types: i,i,i,s,s,s,s,i,s,s,i,s => 'iiissssissis' but we construct as below
   // compute start_date/end_date if start_date provided but end_date missing
   if ($start_date !== '') {
     try {
@@ -163,11 +143,18 @@ try {
         $end_date = $ed->format('Y-m-d');
       }
     } catch (Throwable $t) {
-      // invalid date, reset to empty so NULL will be stored
       $start_date = '';
       $end_date = '';
     }
   }
+
+  // defaults for non-allocation fields (mode, room_id)
+  $mode = isset($data['mode']) ? trim($data['mode']) : 'online';
+  $room_id_val = isset($data['room_id']) && intval($data['room_id']) > 0 ? intval($data['room_id']) : 0;
+  // ensure zoom fields satisfy chk_ws_mode_fields: zoom_id must NOT be null for online mode
+  $zoom_id = trim($data['zoom_id'] ?? '') ?: 'TBA';
+  $zoom_password = trim($data['zoom_password'] ?? '');
+  $room_name = trim($data['room_name'] ?? '');
 
   $types = 'iiissssississs';
   $ins->bind_param(

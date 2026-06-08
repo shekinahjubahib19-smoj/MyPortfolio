@@ -24,7 +24,8 @@ $conn = new mysqli(
 
 // 4. Check if it actually worked
 if ($conn->connect_error) {
-    // Throw an exception so callers can respond with JSON
-    throw new Exception("Connection failed: " . $conn->connect_error);
+    http_response_code(500);
+    echo json_encode(['success' => false, 'message' => 'Database connection failed.']);
+    exit;
 }
 ?>

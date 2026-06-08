@@ -25,7 +25,6 @@ import Navbar from "./components/navbar";
 import Sidebar from "./components/sidebar";
 import Hero from "./sections/hero";
 import Login from "./sections/login";
-import Dashboard from "./pages/dashboard";
 import UserManagement from "./pages/user-management";
 import MasterScheduler from "./pages/master-scheduler";
 import TeacherAllocation from "./pages/teacher-allocation";
@@ -81,8 +80,8 @@ function AppInner() {
       const current = (window.location.hash || "").replace("#/", "");
 
       if (user.must_change_password) {
-        if (current !== "dashboard") {
-          window.location.hash = "#/dashboard";
+        if (current !== "master-scheduler") {
+          window.location.hash = "#/master-scheduler";
         }
         return;
       }
@@ -96,14 +95,14 @@ function AppInner() {
         ) {
           window.location.hash = "#/profile";
         } else {
-          window.location.hash = "#/dashboard";
+          window.location.hash = "#/master-scheduler";
         }
         return;
       }
 
       // If a non-admin user is on the admin-only `users` route, redirect
       if (user && user.role !== "ADMIN" && current === "users") {
-        window.location.hash = "#/dashboard";
+        window.location.hash = "#/master-scheduler";
       }
 
       // If a user hasn't completed profile, always redirect to setup
@@ -189,19 +188,18 @@ function AppInner() {
               case "teacher-allocation":
                 // Only ADMIN may access teacher allocation
                 if (user?.role === "ADMIN") return <TeacherAllocation />;
-                return <Dashboard />;
+                return <MasterScheduler />;
               case "teachers":
                 // Only ADMIN may access teachers list
                 if (user?.role === "ADMIN") return <Teachers />;
-                return <Dashboard />;
+                return <MasterScheduler />;
               case "subjects":
                 return <SubjectList />;
               case "profile":
                 return <Profile />;
-              case "dashboard":
               case "":
               default:
-                return <Dashboard />;
+                return <MasterScheduler />;
             }
           })()}
         </div>

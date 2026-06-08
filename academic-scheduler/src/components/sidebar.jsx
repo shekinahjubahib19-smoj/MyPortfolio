@@ -22,7 +22,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
   }, []);
 
   const isActive = (name) => {
-    if (!route || route === "") return name === "dashboard";
+    if (!route || route === "") return name === "master-scheduler";
     return route === name;
   };
 
@@ -64,24 +64,7 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
         </button>
       </div>
       <nav className="sidebar-nav" aria-label="Main sidebar">
-        <a
-          href="#/dashboard"
-          className={`sidebar-link ${isActive("dashboard") ? "is-active" : ""}`}
-        >
-          <span className="sidebar-icon" aria-hidden="true">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              viewBox="0 0 24 24"
-              fill="currentColor"
-            >
-              <rect x="3" y="3" width="8" height="8" rx="1" />
-              <rect x="13" y="3" width="8" height="4" rx="1" />
-              <rect x="13" y="9" width="8" height="12" rx="1" />
-              <rect x="3" y="13" width="8" height="6" rx="1" />
-            </svg>
-          </span>
-          <span className="sidebar-label">Dashboard</span>
-        </a>
+        {/* Dashboard removed - not required */}
 
         <a
           href="#/master-scheduler"
@@ -109,13 +92,21 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
               className={`sidebar-link ${isActive("teacher-allocation") ? "is-active" : ""}`}
             >
               <span className="sidebar-icon" aria-hidden="true">
+                {/* Clipboard with person — assigning/scheduling teachers */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
-                  <circle cx="12" cy="8" r="3" />
-                  <path d="M5 20c1.5-4 6-6 7-6s5.5 2 7 6" />
+                  <rect x="6" y="3" width="12" height="18" rx="2" />
+                  <rect x="8" y="1" width="3" height="3" rx="1" />
+                  <rect x="13" y="1" width="3" height="3" rx="1" />
+                  <circle cx="12" cy="11" r="2.2" fill="white" opacity=".85" />
+                  <path
+                    d="M7.5 16c.7-1.8 2.3-2.8 4.5-2.8s3.8 1 4.5 2.8H7.5z"
+                    fill="white"
+                    opacity=".85"
+                  />
                 </svg>
               </span>
               <span className="sidebar-label">Teacher Allocation</span>
@@ -126,13 +117,16 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
               className={`sidebar-link ${isActive("teachers") ? "is-active" : ""}`}
             >
               <span className="sidebar-icon" aria-hidden="true">
+                {/* Person with badge — teacher/educator card */}
                 <svg
                   xmlns="http://www.w3.org/2000/svg"
                   viewBox="0 0 24 24"
                   fill="currentColor"
                 >
-                  <circle cx="12" cy="7" r="3" />
-                  <path d="M4 21c2-4 6-6 8-6s6 2 8 6" />
+                  <circle cx="12" cy="7" r="4" />
+                  <path d="M4 21v-2a6 6 0 0112 0v2" />
+                  <rect x="16" y="13" width="6" height="8" rx="1.5" fill="currentColor" opacity=".7" />
+                  <path d="M17 15h4M17 18h2" stroke="white" strokeWidth="1.2" strokeLinecap="round" />
                 </svg>
               </span>
               <span className="sidebar-label">Teachers</span>
@@ -165,12 +159,14 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
           className={`sidebar-link ${isActive("students") ? "is-active" : ""}`}
         >
           <span className="sidebar-icon" aria-hidden="true">
+            {/* Graduation cap — students */}
             <svg
               xmlns="http://www.w3.org/2000/svg"
               viewBox="0 0 24 24"
               fill="currentColor"
             >
-              <path d="M12 2a4 4 0 100 8 4 4 0 000-8zM4 20a8 8 0 0116 0H4z" />
+              <path d="M12 3L1 9l11 6 9-4.91V17h2V9L12 3z" />
+              <path d="M5 13.18V17l7 4 7-4v-3.82L12 17l-7-3.82z" />
             </svg>
           </span>
           <span className="sidebar-label">Students</span>
@@ -182,13 +178,17 @@ const Sidebar = ({ collapsed = false, onToggleCollapse }) => {
             className={`sidebar-link ${isActive("users") ? "is-active" : ""}`}
           >
             <span className="sidebar-icon" aria-hidden="true">
+              {/* Shield with person — admin/permissions */}
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 24 24"
                 fill="currentColor"
               >
-                <circle cx="9" cy="8" r="3" />
-                <path d="M2 20c2-4 7-6 9-6s7 2 9 6" />
+                <path
+                  d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4z"
+                  opacity=".35"
+                />
+                <path d="M12 1L3 5v6c0 5.25 3.75 10.15 9 11.35C17.25 21.15 21 16.25 21 11V5l-9-4zm0 4a2.5 2.5 0 110 5 2.5 2.5 0 010-5zm0 10c-2.5 0-4.71-1.29-6-3.22C6.03 10.12 9.5 9 12 9s5.97 1.12 6 2.78A7.11 7.11 0 0112 15z" />
               </svg>
             </span>
             <span className="sidebar-label">User Management</span>

@@ -1,3 +1,6 @@
+# .claude local settings (may contain API keys)
+.claude/setting.local.json
+
 # Logs
 logs
 *.log

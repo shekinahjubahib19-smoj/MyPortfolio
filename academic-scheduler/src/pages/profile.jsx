@@ -13,14 +13,12 @@ const Profile = () => {
   const [lastName, setLastName] = useState("");
   const [maxHours, setMaxHours] = useState(8);
   const [savedProfile, setSavedProfile] = useState(null);
-  const [hasProfile, setHasProfile] = useState(false);
   const [isEditingExisting, setIsEditingExisting] = useState(false);
   const [message, setMessage] = useState("");
   const [working, setWorking] = useState(false);
   const [resultOpen, setResultOpen] = useState(false);
   const [resultError, setResultError] = useState(false);
   const [resultMessage, setResultMessage] = useState("");
-  const [resultRedirect, setResultRedirect] = useState(false);
   const didLoad = useRef(false);
 
   useEffect(() => {
@@ -37,12 +35,10 @@ const Profile = () => {
           setMaxHours(profile.max_hours_per_day ?? 8);
           // store saved profile for display if user already has data
           setSavedProfile(profile);
-          setHasProfile(true);
           setIsEditingExisting(false);
           // ensure username is current from auth context
           setUsername(user?.username || "");
         } else {
-          setHasProfile(false);
           setIsEditingExisting(false);
         }
       } catch (err) {
@@ -50,11 +46,6 @@ const Profile = () => {
       }
     })();
   }, [user]);
-
-  const toggleSubject = (id) => {
-    // no-op now: subjects removed from teacher flow
-    return;
-  };
 
   const clearInputs = () => {
     setTeacherCode("");
@@ -78,15 +69,16 @@ const Profile = () => {
     setMessage("");
     return true;
   };
-  const goNext = () => {
-    if (!validateStep1()) return false;
-    return true;
-  };
 
   const handleSave = async () => {
     if (!user) return;
     setWorking(true);
     setMessage("");
+    // validate required fields before saving (prevents unused validator warning)
+    if (!validateStep1()) {
+      setWorking(false);
+      return;
+    }
     try {
       const payload = {
         user_id: user.id,
@@ -101,7 +93,6 @@ const Profile = () => {
       if (json && json.success) {
         setResultError(false);
         setResultMessage("Saved successfully.");
-        setResultRedirect(false);
         setResultOpen(true);
         // extract saved profile depending on admin or teacher response
         if (isAdmin) {
@@ -109,7 +100,6 @@ const Profile = () => {
             json.profile && json.profile.admin ? json.profile.admin : null;
           if (adminProfile) {
             setSavedProfile(adminProfile);
-            setHasProfile(true);
             setIsEditingExisting(false);
           }
         } else {
@@ -118,7 +108,6 @@ const Profile = () => {
             json.profile && json.profile.profile ? json.profile.profile : null;
           if (teacherResp) {
             setSavedProfile(teacherResp);
-            setHasProfile(true);
             setIsEditingExisting(false);
           }
         }
@@ -128,14 +117,12 @@ const Profile = () => {
       } else {
         setResultError(true);
         setResultMessage(json?.message || "Failed to save. Please try again.");
-        setResultRedirect(false);
         setResultOpen(true);
       }
     } catch (err) {
       console.error(err);
       setResultError(true);
       setResultMessage("Failed to save. Please try again.");
-      setResultRedirect(false);
       setResultOpen(true);
     } finally {
       setWorking(false);
@@ -204,7 +191,7 @@ const Profile = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "flex-start",
-                    paddingTop: "3rem",
+                    paddingTop: "1rem",
                   }}
                 >
                   <form
@@ -278,7 +265,9 @@ const Profile = () => {
                     display: "flex",
                     justifyContent: "center",
                     gap: "0.5rem",
-                    marginTop: "0.5rem",
+                    marginTop: "0.25rem",
+                    minHeight: "68px",
+                    alignItems: "center",
                   }}
                 >
                   <>
@@ -330,7 +319,7 @@ const Profile = () => {
                     display: "flex",
                     justifyContent: "center",
                     alignItems: "flex-start",
-                    paddingTop: "3rem",
+                    paddingTop: "1rem",
                   }}
                 >
                   <form
@@ -395,7 +384,9 @@ const Profile = () => {
                     display: "flex",
                     justifyContent: "center",
                     gap: "0.5rem",
-                    marginTop: "0.5rem",
+                    marginTop: "0.25rem",
+                    minHeight: "68px",
+                    alignItems: "center",
                   }}
                 >
                   <button

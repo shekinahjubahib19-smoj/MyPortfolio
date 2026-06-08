@@ -1,7 +1,143 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState, useRef } from "react";
 import "../assets/css/teacher-allocation.css";
+import Modal from "../components/Modal.jsx";
 
-import Modal from "../components/Modal";
+import API_BASE from "../config.js";
+
+// ── TypeField: type-to-search combobox ──────────────────────────────────────
+const TypeField = ({ label, placeholder, options, value, onChange }) => {
+  const [open, setOpen] = useState(false);
+  const [search, setSearch] = useState("");
+  const [highlight, setHighlight] = useState(0);
+  const wrapRef = useRef(null);
+  const inputRef = useRef(null);
+
+  const displayLabel = options.find(
+    (o) => String(o.value) === String(value),
+  )?.label;
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return options.slice(0, 20);
+    return options.filter((o) => {
+      const lbl = String(o.label || "").toLowerCase();
+      const val = String(o.value || "").toLowerCase();
+      return lbl.includes(q) || val.includes(q);
+    });
+  }, [search, options]);
+
+  const select = (opt) => {
+    onChange(String(opt.value));
+    setSearch("");
+    setOpen(false);
+    setHighlight(0);
+  };
+
+  const clear = (e) => {
+    e.stopPropagation();
+    setSearch("");
+    onChange("");
+    inputRef.current?.focus();
+  };
+
+  // close dropdown on outside click
+  useEffect(() => {
+    const handler = (e) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  const handleKey = (e) => {
+    if (!open) {
+      setOpen(true);
+      return;
+    }
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setHighlight((h) => Math.min(h + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setHighlight((h) => Math.max(h - 1, 0));
+    } else if (e.key === "Enter" && filtered[highlight])
+      select(filtered[highlight]);
+    else if (e.key === "Escape") setOpen(false);
+  };
+
+  const shownValue = open ? search : displayLabel || search;
+
+  return (
+    <div className="tf-wrap" ref={wrapRef}>
+      {label && <label className="tf-label">{label}</label>}
+      <div className="tf-field">
+        <input
+          ref={inputRef}
+          className="tf-input"
+          type="text"
+          placeholder={placeholder}
+          value={shownValue}
+          onFocus={() => {
+            setOpen(true);
+            setSearch(displayLabel || "");
+          }}
+          onBlur={() => {
+            setSearch(displayLabel || "");
+          }}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setOpen(true);
+            setHighlight(0);
+          }}
+          onKeyDown={handleKey}
+          autoComplete="off"
+        />
+        {value && !open && (
+          <button
+            type="button"
+            className="tf-clear"
+            onClick={clear}
+            aria-label="Clear selection"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              width="13"
+              height="13"
+            >
+              <path
+                d="M18 6L6 18M6 6l12 12"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        )}
+        {open && (
+          <ul className="tf-dropdown">
+            {filtered.length === 0 && <li className="tf-empty">No matches</li>}
+            {filtered.map((opt, i) => (
+              <li
+                key={opt.value}
+                className={`tf-option${i === highlight ? " tf-highlight" : ""}`}
+                onMouseDown={() => select(opt)}
+                onMouseEnter={() => setHighlight(i)}
+              >
+                {opt.label}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+};
+
+// ── main component ───────────────────────────────────────────────────────────
 
 const TeacherAllocation = () => {
   const [teachers, setTeachers] = useState([]);
@@ -24,11 +160,7 @@ const TeacherAllocation = () => {
     end_time: "09:00",
     subject_id: "",
     student_id: "",
-    mode: "online",
     weeks: "1",
-    zoom_id: "",
-    zoom_pass: "",
-    room_name: "Room 101",
     start_date: new Date().toISOString().slice(0, 10),
   };
 
@@ -51,15 +183,9 @@ const TeacherAllocation = () => {
     (async () => {
       try {
         const [usersRes, subjectsRes, studentsRes] = await Promise.all([
-          fetch(
-            "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_users.php",
-          ),
-          fetch(
-            "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_subjects.php",
-          ),
-          fetch(
-            "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_students.php",
-          ),
+          fetch(`${API_BASE}/api/list_users.php`),
+          fetch(`${API_BASE}/api/list_subjects.php`),
+          fetch(`${API_BASE}/api/list_students.php`),
         ]);
         const usersJson = await usersRes.json();
         const subjectsJson = await subjectsRes.json();
@@ -92,12 +218,6 @@ const TeacherAllocation = () => {
     // load schedules for this teacher immediately
     loadSchedules(teacher.profile?.id);
   };
-
-  // derive selected student object
-  const selectedStudent =
-    (form.student_id &&
-      students.find((s) => String(s.id) === String(form.student_id))) ||
-    null;
 
   // update student selection and clear subject when levels mismatch
   const handleStudentChange = (studentId) => {
@@ -133,7 +253,7 @@ const TeacherAllocation = () => {
   const loadSchedules = async (teacherProfileId) => {
     if (!teacherProfileId) return [];
     try {
-      const url = `http://localhost/MyPortfolio/academic-scheduler/backend/api/list_weekly_schedules.php?teacher_profile_id=${teacherProfileId}`;
+      const url = `${API_BASE}/api/list_weekly_schedules.php?teacher_profile_id=${teacherProfileId}`;
       const res = await fetch(url);
       const j = await res.json();
       setLastResponse(j);
@@ -266,8 +386,7 @@ const TeacherAllocation = () => {
     form.subject_id &&
     form.student_id &&
     form.start_time < form.end_time &&
-    Number(form.weeks) > 0 &&
-    (form.mode === "online" ? form.zoom_id && form.zoom_pass : form.room_name),
+    Number(form.weeks) > 0,
   );
 
   const primaryDay =
@@ -373,27 +492,16 @@ const TeacherAllocation = () => {
           day_of_week: d,
           start_time: ensureSeconds(form.start_time),
           end_time: ensureSeconds(form.end_time),
-          mode: form.mode,
           weeks: Number(form.weeks) || 1,
           start_date: perDayStart,
           end_date: perDayEnd,
         };
-        // include mode-specific fields so DB constraints are satisfied
-        if (form.mode === "online") {
-          payload.zoom_id = form.zoom_id || "";
-          payload.zoom_pass = form.zoom_pass || "";
-        } else {
-          payload.room_name = form.room_name || "";
-        }
         setLastRequest(payload);
-        const res = await fetch(
-          "http://localhost/MyPortfolio/academic-scheduler/backend/api/create_weekly_schedule.php",
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
-          },
-        );
+        const res = await fetch(`${API_BASE}/api/create_weekly_schedule.php`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
         if (!res.ok) {
           const text = await res.text();
           setLastResponse(text);
@@ -419,7 +527,6 @@ const TeacherAllocation = () => {
             student_code: student?.student_code || "",
             student_first_name: student?.first_name || "",
             student_last_name: student?.last_name || "",
-            mode: form.mode,
             weeks: Number(form.weeks) || 1,
           };
           setSchedules((prev) => prev.concat(nextRow));
@@ -456,14 +563,11 @@ const TeacherAllocation = () => {
 
   const deleteSchedule = async (id) => {
     try {
-      const res = await fetch(
-        "http://localhost/MyPortfolio/academic-scheduler/backend/api/delete_weekly_schedule.php",
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id }),
-        },
-      );
+      const res = await fetch(`${API_BASE}/api/delete_weekly_schedule.php`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ id }),
+      });
       const j = await res.json();
       if (j.success) loadSchedules(selectedTeacher.profile?.id);
     } catch (err) {
@@ -486,137 +590,75 @@ const TeacherAllocation = () => {
         <section className="ta-panel ta-step">
           <div className="ta-panel-title">Schedule a session</div>
 
-          <div className="ta-row">
-            <label>Teacher</label>
-            <select
-              value={selectedTeacher?.id || ""}
-              onChange={(e) => {
-                const t = teachers.find((x) => String(x.id) === e.target.value);
-                if (t) selectTeacher(t);
-                else {
-                  setSelectedTeacher(null);
-                  setSchedules([]);
-                }
-              }}
-            >
-              <option value="">Select teacher</option>
-              {teachers.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.profile?.first_name} {t.profile?.last_name} -{" "}
-                  {t.profile?.teacher_code || t.username}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="ta-row">
-            <label>Student</label>
-            <select
-              value={form.student_id}
-              onChange={(e) => handleStudentChange(e.target.value)}
-            >
-              <option value="">Select student</option>
-              {students.map((s) => (
-                <option key={s.id} value={s.id}>
-                  {s.student_code} - {s.first_name} {s.last_name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="ta-row">
-            <label>Subject</label>
-            <select
-              value={form.subject_id}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, subject_id: e.target.value }))
+          <TypeField
+            label="Teacher"
+            placeholder="Select teacher"
+            options={teachers.map((t) => ({
+              value: String(t.id),
+              label: `${t.profile?.first_name || ""} ${t.profile?.last_name || ""} - ${t.profile?.teacher_code || t.username}`,
+            }))}
+            value={selectedTeacher ? String(selectedTeacher.id) : ""}
+            onChange={(val) => {
+              const t = teachers.find((x) => String(x.id) === val);
+              if (t) selectTeacher(t);
+              else {
+                setSelectedTeacher(null);
+                setSchedules([]);
               }
-            >
-              <option value="">Select subject</option>
-              {subjects
-                .filter((s) =>
-                  (selectedTeacher?.profile?.subjects || [])
-                    .map((ss) => Number(ss.id))
-                    .includes(Number(s.id)),
+            }}
+          />
+
+          <TypeField
+            label="Student"
+            placeholder="Select student"
+            options={students.map((s) => ({
+              value: String(s.id),
+              label: `${s.student_code || ""} - ${s.first_name || ""} ${s.last_name || ""}`,
+            }))}
+            value={form.student_id}
+            onChange={handleStudentChange}
+          />
+
+          <TypeField
+            label="Subject"
+            placeholder="Select subject"
+            options={subjects
+              .filter((s) =>
+                (selectedTeacher?.profile?.subjects || [])
+                  .map((ss) => Number(ss.id))
+                  .includes(Number(s.id)),
+              )
+              .filter((s) => {
+                if (!form.student_id) return true;
+                const stu = students.find(
+                  (x) => String(x.id) === String(form.student_id),
+                );
+                if (!stu) return true;
+                const studentLevel = (stu.current_level || stu.level || "")
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+                const subjLevel = (
+                  s.level ||
+                  s.level_name ||
+                  s.levelName ||
+                  s.default_level ||
+                  ""
                 )
-                .filter((s) => {
-                  // if no student selected, don't filter by level
-                  if (!form.student_id) return true;
-                  const stu = selectedStudent;
-                  if (!stu) return true;
-                  const studentLevel = (stu.current_level || stu.level || "")
-                    .toString()
-                    .trim()
-                    .toLowerCase();
-                  const subjLevel = (
-                    s.level ??
-                    s.level_name ??
-                    s.levelName ??
-                    s.default_level ??
-                    ""
-                  )
-                    .toString()
-                    .trim()
-                    .toLowerCase();
-                  if (!studentLevel) return true;
-                  if (!subjLevel) return true;
-                  return studentLevel === subjLevel;
-                })
-                .map((s) => (
-                  <option key={s.id} value={s.id}>
-                    {s.subject_name || s.name || s.subject}
-                  </option>
-                ))}
-            </select>
-          </div>
-
-          <div className="ta-row">
-            <label>Mode</label>
-            <select
-              value={form.mode}
-              onChange={(e) => setForm((f) => ({ ...f, mode: e.target.value }))}
-            >
-              <option value="online">Online</option>
-              <option value="f2f">Face to face</option>
-            </select>
-          </div>
-
-          {form.mode === "online" && (
-            <div className="ta-row">
-              <label>Zoom ID</label>
-              <input
-                type="text"
-                value={form.zoom_id}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, zoom_id: e.target.value }))
-                }
-              />
-              <label style={{ marginLeft: 12 }}>Zoom Pass</label>
-              <input
-                type="text"
-                value={form.zoom_pass}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, zoom_pass: e.target.value }))
-                }
-              />
-            </div>
-          )}
-
-          {form.mode === "f2f" && (
-            <div className="ta-row">
-              <label>Room</label>
-              <select
-                value={form.room_name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, room_name: e.target.value }))
-                }
-              >
-                <option value="Room 101">Room 101</option>
-                <option value="Room 102">Room 102</option>
-                <option value="Room 103">Room 103</option>
-              </select>
-            </div>
-          )}
+                  .toString()
+                  .trim()
+                  .toLowerCase();
+                if (!studentLevel) return true;
+                if (!subjLevel) return true;
+                return studentLevel === subjLevel;
+              })
+              .map((s) => ({
+                value: String(s.id),
+                label: `${s.subject_name || s.name || s.subject}${s.level_name || s.level ? ` (${s.level_name || s.level})` : ""}`,
+              }))}
+            value={form.subject_id}
+            onChange={(val) => setForm((f) => ({ ...f, subject_id: val }))}
+          />
 
           <div className="ta-row">
             <label>Period (weeks)</label>
@@ -633,17 +675,38 @@ const TeacherAllocation = () => {
           </div>
 
           <div className="ta-row">
-            <label>Start Date</label>
+            <label
+              className="tf-time-label"
+              onClick={() =>
+                document.getElementById("ta-date-start")?.showPicker?.()
+              }
+            >
+              Start Date
+            </label>
             <input
+              id="ta-date-start"
               type="date"
+              className="ta-time-input"
               value={form.start_date}
+              onClick={(e) => e.target.showPicker?.()}
               onChange={(e) =>
                 setForm((f) => ({ ...f, start_date: e.target.value }))
               }
             />
-            <label style={{ marginLeft: 12 }}>End Date</label>
+            <label
+              className="tf-time-label"
+              style={{ marginLeft: 12 }}
+              onClick={() =>
+                document.getElementById("ta-date-end")?.showPicker?.()
+              }
+            >
+              End Date
+            </label>
             <input
+              id="ta-date-end"
               type="date"
+              className="ta-time-input"
+              style={{ cursor: "pointer" }}
               value={(() => {
                 if (!form.start_date || !form.weeks) return "";
                 const ed = computeEndDate(
@@ -684,19 +747,40 @@ const TeacherAllocation = () => {
             </div>
           </div>
 
-          <div className="ta-row">
-            <label>Start</label>
+          <div className="ta-row ta-row--time">
+            <label
+              className="tf-time-label"
+              onClick={() =>
+                document.getElementById("ta-time-start")?.showPicker?.()
+              }
+            >
+              Start
+            </label>
             <input
+              id="ta-time-start"
               type="time"
+              className="ta-time-input"
               value={form.start_time}
+              onClick={(e) => e.target.showPicker?.()}
               onChange={(e) =>
                 setForm((f) => ({ ...f, start_time: e.target.value }))
               }
             />
-            <label style={{ marginLeft: 12 }}>End</label>
+            <label
+              className="tf-time-label"
+              style={{ marginLeft: 12 }}
+              onClick={() =>
+                document.getElementById("ta-time-end")?.showPicker?.()
+              }
+            >
+              End
+            </label>
             <input
+              id="ta-time-end"
               type="time"
+              className="ta-time-input"
               value={form.end_time}
+              onClick={(e) => e.target.showPicker?.()}
               onChange={(e) =>
                 setForm((f) => ({ ...f, end_time: e.target.value }))
               }

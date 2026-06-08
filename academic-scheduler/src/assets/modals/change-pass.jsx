@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from "react";
 import "../css/registration.css";
 
+const API_BASE = "/backend";
+
 const ChangePassModal = ({ isOpen, user, onChanged, onLogout }) => {
   const [currentPass, setCurrentPass] = useState("");
   const [newPass, setNewPass] = useState("");
@@ -63,7 +65,7 @@ const ChangePassModal = ({ isOpen, user, onChanged, onLogout }) => {
     setWorking(true);
     try {
       const res = await fetch(
-        "http://localhost/MyPortfolio/academic-scheduler/backend/api/change_password.php",
+        `${API_BASE}/api/change_password.php`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

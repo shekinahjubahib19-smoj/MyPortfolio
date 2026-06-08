@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import "../assets/css/students.css";
 import EnrollStudent from "../assets/modals/enroll_student";
+import API_BASE from "../config.js";
 import StudentProfileModal from "../assets/modals/student_profile_modal";
 import ErrorBoundary from "../components/ErrorBoundary";
 import { useAuth } from "../context/AuthContext";
@@ -21,7 +22,7 @@ const Students = () => {
       setLoading(true);
       try {
         const res = await fetch(
-          "http://localhost/MyPortfolio/academic-scheduler/backend/api/list_students.php",
+          `${API_BASE}/api/list_students.php`,
         );
         const json = await res.json();
         if (json.success) setStudents(json.students || []);
